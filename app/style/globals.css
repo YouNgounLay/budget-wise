@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
+  --background: #f8fafc;
   --foreground: #171717;
   --jet-black: #122C34;
   --yale-blue: #224870;
@@ -13,6 +13,11 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-jet-black: var(--jet-black);
+  --color-yale-blue: var(--yale-blue);
+  --color-french-blue: var(--french-blue);
+  --color-fresh-sky: var(--fresh-sky);
+  --color-strong-cyan: var(--strong-cyan);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -27,5 +32,121 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Modal animation */
+@keyframes modal-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-modal-enter {
+  animation: modal-enter 0.2s ease-out;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+@media (prefers-color-scheme: dark) {
+  ::-webkit-scrollbar-thumb {
+    background: #475569;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+  }
+}
+
+/* Focus states */
+*:focus-visible {
+  outline: 2px solid var(--french-blue);
+  outline-offset: 2px;
+}
+
+/* Text utilities */
+.text-jet-black {
+  color: var(--jet-black);
+}
+
+.text-french-blue {
+  color: var(--french-blue);
+}
+
+.text-fresh-sky {
+  color: var(--fresh-sky);
+}
+
+.text-strong-cyan {
+  color: var(--strong-cyan);
+}
+
+/* Background utilities */
+.bg-french-blue {
+  background-color: var(--french-blue);
+}
+
+.bg-yale-blue {
+  background-color: var(--yale-blue);
+}
+
+.bg-fresh-sky {
+  background-color: var(--fresh-sky);
+}
+
+.bg-strong-cyan {
+  background-color: var(--strong-cyan);
+}
+
+/* Gradient utilities */
+.from-french-blue {
+  --tw-gradient-from: var(--french-blue);
+}
+
+.to-yale-blue {
+  --tw-gradient-to: var(--yale-blue);
+}
+
+/* Hover states */
+.hover\:bg-yale-blue:hover {
+  background-color: var(--yale-blue);
+}
+
+.hover\:text-french-blue:hover {
+  color: var(--french-blue);
+}
+
+.hover\:text-fresh-sky:hover {
+  color: var(--fresh-sky);
+}
+
+/* Ring utilities */
+.ring-french-blue {
+  --tw-ring-color: var(--french-blue);
+}
+
+.focus\:ring-french-blue:focus {
+  --tw-ring-color: var(--french-blue);
 }

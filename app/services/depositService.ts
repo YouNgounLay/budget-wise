@@ -1,0 +1,214 @@
+/**
+ * Deposit Service
+ * Handles chain deposit/withdrawal operations with cascading logic
+ */
+
+import { Account } from '@/app/types/account';
+import { Chain, DepositResult } from '@/app/types/chain';
+import { getAccountById, updateAccount } from './accountService';
+import { getChainById } from './chainService';
+import { getCurrentTimestamp } from '@/app/utils/helpers';
+
+/**
+ * Deposits money to a chain, cascading from left to right
+ * Money fills each account until its limit is reached, then moves to the next
+ */
+export function depositToChain(
+  chainId: string,
+  amount: number,
+  accounts: Account[]
+): DepositResult {
+  if (amount <= 0) {
+    return {
+      success: false,
+      deposits: [],
+      remainingAmount: amount,
+      message: 'Deposit amount must be greater than 0',
+    };
+  }
+
+  const chain = getChainById(chainId);
+  if (!chain) {
+    return {
+      success: false,
+      deposits: [],
+      remainingAmount: amount,
+      message: 'Chain not found',
+    };
+  }
+
+  if (chain.accounts.length === 0) {
+    return {
+      success: false,
+      deposits: [],
+      remainingAmount: amount,
+      message: 'Chain has no accounts',
+    };
+  }
+
+  const deposits: DepositResult['deposits'] = [];
+  let remainingAmount = amount;
+
+  // Process each account in the chain order
+  for (const chainAccount of chain.accounts) {
+    if (remainingAmount <= 0) break;
+
+    const account = accounts.find((a) => a.id === chainAccount.accountId);
+    if (!account) continue;
+
+    const currentAmount = account.amount;
+    const limit = chainAccount.limit;
+    const spaceAvailable = Math.max(0, limit - currentAmount);
+
+    if (spaceAvailable > 0) {
+      const depositAmount = Math.min(remainingAmount, spaceAvailable);
+      const newBalance = currentAmount + depositAmount;
+
+      deposits.push({
+        accountId: account.id,
+        accountName: account.name,
+        amount: depositAmount,
+        newBalance,
+      });
+
+      remainingAmount -= depositAmount;
+    }
+  }
+
+  const totalDeposited = amount - remainingAmount;
+
+  if (totalDeposited === 0) {
+    return {
+      success: false,
+      deposits: [],
+      remainingAmount: amount,
+      message: 'All accounts in the chain have reached their limits',
+    };
+  }
+
+  return {
+    success: true,
+    deposits,
+    remainingAmount,
+    message:
+      remainingAmount > 0
+        ? `Deposited ${formatMoney(totalDeposited)}. ${formatMoney(remainingAmount)} remaining (all limits reached).`
+        : `Successfully deposited ${formatMoney(totalDeposited)} across ${deposits.length} account(s).`,
+  };
+}
+
+/**
+ * Applies the deposit result to actually update account balances
+ */
+export function applyDeposits(
+  deposits: DepositResult['deposits'],
+  accounts: Account[]
+): Account[] {
+  const updatedAccounts = [...accounts];
+
+  for (const deposit of deposits) {
+    const index = updatedAccounts.findIndex((a) => a.id === deposit.accountId);
+    if (index !== -1) {
+      updatedAccounts[index] = {
+        ...updatedAccounts[index],
+        amount: deposit.newBalance,
+        updatedAt: getCurrentTimestamp(),
+      };
+    }
+  }
+
+  return updatedAccounts;
+}
+
+/**
+ * Withdraws money from a chain, starting from the last account
+ */
+export function withdrawFromChain(
+  chainId: string,
+  amount: number,
+  accounts: Account[]
+): DepositResult {
+  if (amount <= 0) {
+    return {
+      success: false,
+      deposits: [],
+      remainingAmount: amount,
+      message: 'Withdrawal amount must be greater than 0',
+    };
+  }
+
+  const chain = getChainById(chainId);
+  if (!chain) {
+    return {
+      success: false,
+      deposits: [],
+      remainingAmount: amount,
+      message: 'Chain not found',
+    };
+  }
+
+  if (chain.accounts.length === 0) {
+    return {
+      success: false,
+      deposits: [],
+      remainingAmount: amount,
+      message: 'Chain has no accounts',
+    };
+  }
+
+  const withdrawals: DepositResult['deposits'] = [];
+  let remainingAmount = amount;
+
+  // Process accounts in reverse order (right to left)
+  const reversedAccounts = [...chain.accounts].reverse();
+
+  for (const chainAccount of reversedAccounts) {
+    if (remainingAmount <= 0) break;
+
+    const account = accounts.find((a) => a.id === chainAccount.accountId);
+    if (!account || account.amount <= 0) continue;
+
+    const withdrawAmount = Math.min(remainingAmount, account.amount);
+    const newBalance = account.amount - withdrawAmount;
+
+    withdrawals.push({
+      accountId: account.id,
+      accountName: account.name,
+      amount: -withdrawAmount,
+      newBalance,
+    });
+
+    remainingAmount -= withdrawAmount;
+  }
+
+  const totalWithdrawn = amount - remainingAmount;
+
+  if (totalWithdrawn === 0) {
+    return {
+      success: false,
+      deposits: [],
+      remainingAmount: amount,
+      message: 'No funds available in chain accounts',
+    };
+  }
+
+  return {
+    success: true,
+    deposits: withdrawals,
+    remainingAmount,
+    message:
+      remainingAmount > 0
+        ? `Withdrew ${formatMoney(totalWithdrawn)}. ${formatMoney(remainingAmount)} could not be withdrawn (insufficient funds).`
+        : `Successfully withdrew ${formatMoney(totalWithdrawn)} from ${withdrawals.length} account(s).`,
+  };
+}
+
+/**
+ * Helper function to format money
+ */
+function formatMoney(amount: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(Math.abs(amount));
+}

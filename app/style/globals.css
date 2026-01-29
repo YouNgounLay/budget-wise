@@ -47,6 +47,118 @@ body {
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
 
+/* ============================
+   Hyperlink Styles
+   ============================ */
+a {
+  text-decoration: none !important;
+  transition: color 0.3s ease;
+}
+
+a:hover {
+  text-decoration: none !important;
+}
+
+/* ============================
+   Navigation Link Hover Animation
+   ============================ */
+nav a,
+.nav-link {
+  position: relative;
+  padding-bottom: 4px;
+  text-decoration: none !important;
+  border-bottom: none !important;
+}
+
+nav a:link,
+nav a:visited,
+nav a:hover,
+nav a:active,
+.nav-link:link,
+.nav-link:visited,
+.nav-link:hover,
+.nav-link:active {
+  text-decoration: none !important;
+  border-bottom: none !important;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--french-blue), var(--fresh-sky));
+  transition: width 0.3s ease, transform 0.3s ease;
+  border-radius: 2px;
+}
+
+.nav-link:hover::after {
+  width: 100%;
+}
+
+.nav-link:hover {
+  transform: translateY(-1px);
+}
+
+html.dark .nav-link::after {
+  background: linear-gradient(90deg, var(--fresh-sky), var(--strong-cyan));
+}
+
+/* Animated underline for content links - exclude nav links */
+main a,
+article a,
+.content a {
+  position: relative;
+  color: var(--french-blue);
+}
+
+main a::after,
+article a::after,
+.content a::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: -2px;
+  left: 50%;
+  background: linear-gradient(90deg, var(--fresh-sky), var(--strong-cyan));
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+  border-radius: 2px;
+}
+
+main a:hover,
+article a:hover,
+.content a:hover {
+  color: var(--fresh-sky);
+}
+
+main a:hover::after,
+article a:hover::after,
+.content a:hover::after {
+  width: 100%;
+}
+
+html.dark main a,
+html.dark article a,
+html.dark .content a {
+  color: var(--fresh-sky);
+}
+
+html.dark main a:hover,
+html.dark article a:hover,
+html.dark .content a:hover {
+  color: var(--strong-cyan);
+}
+
+/* Override Tailwind underline utilities */
+.hover\:underline:hover,
+.underline {
+  text-decoration: none !important;
+}
+
 /* Modal animation */
 @keyframes modal-enter {
   from {

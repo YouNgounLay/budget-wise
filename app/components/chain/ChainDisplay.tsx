@@ -124,7 +124,7 @@ export function ChainDisplay({
             {onManageAccounts && (
               <button
                 onClick={onManageAccounts}
-                className="mt-2 text-french-blue hover:underline"
+                className="mt-2 text-french-blue hover:text-fresh-sky transition-colors"
               >
                 Add accounts →
               </button>

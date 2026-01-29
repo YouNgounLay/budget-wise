@@ -26,19 +26,22 @@ export function Header() {
           <nav className="hidden md:flex items-center gap-6">
             <Link
               href="/"
-              className="text-slate-600 dark:text-slate-300 hover:text-french-blue dark:hover:text-fresh-sky transition-colors"
+              className="nav-link text-slate-600 dark:text-slate-300 hover:text-french-blue dark:hover:text-fresh-sky transition-all no-underline"
+              style={{ textDecoration: 'none' }}
             >
               Dashboard
             </Link>
             <Link
               href="/accounts"
-              className="text-slate-600 dark:text-slate-300 hover:text-french-blue dark:hover:text-fresh-sky transition-colors"
+              className="nav-link text-slate-600 dark:text-slate-300 hover:text-french-blue dark:hover:text-fresh-sky transition-all no-underline"
+              style={{ textDecoration: 'none' }}
             >
               Accounts
             </Link>
             <Link
               href="/chains"
-              className="text-slate-600 dark:text-slate-300 hover:text-french-blue dark:hover:text-fresh-sky transition-colors"
+              className="nav-link text-slate-600 dark:text-slate-300 hover:text-french-blue dark:hover:text-fresh-sky transition-all no-underline"
+              style={{ textDecoration: 'none' }}
             >
               Chains
             </Link>

@@ -24,27 +24,29 @@ export function IconPicker({ value, onChange, label }: IconPickerProps) {
           {label}
         </label>
       )}
-      <div className="grid grid-cols-5 gap-2">
-        {icons.map(([iconKey, emoji]) => (
-          <button
-            key={iconKey}
-            type="button"
-            onClick={() => onChange(iconKey)}
-            className={`
-              p-3 rounded-lg text-2xl transition-all duration-200
-              hover:scale-110 hover:bg-slate-100 dark:hover:bg-slate-700
-              ${
-                value === iconKey
-                  ? 'bg-french-blue/20 ring-2 ring-french-blue'
-                  : 'bg-slate-50 dark:bg-slate-800'
-              }
-            `}
-            title={iconKey}
-            aria-label={`Select ${iconKey} icon`}
-          >
-            {emoji}
-          </button>
-        ))}
+      <div className="max-h-48 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700 p-2">
+        <div className="grid grid-cols-6 gap-2">
+          {icons.map(([iconKey, emoji]) => (
+            <button
+              key={iconKey}
+              type="button"
+              onClick={() => onChange(iconKey)}
+              className={`
+                p-2 rounded-lg text-xl transition-all duration-200
+                hover:scale-110 hover:bg-slate-100 dark:hover:bg-slate-700
+                ${
+                  value === iconKey
+                    ? 'bg-french-blue/20 ring-2 ring-french-blue'
+                    : 'bg-slate-50 dark:bg-slate-800'
+                }
+              `}
+              title={iconKey}
+              aria-label={`Select ${iconKey} icon`}
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

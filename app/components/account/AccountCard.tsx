@@ -30,7 +30,10 @@ export function AccountCard({
   compact = false,
 }: AccountCardProps) {
   const icon = ACCOUNT_ICONS[account.icon];
-  const color = ACCOUNT_COLORS[account.color];
+  // Use customColor if color is 'custom', otherwise use the preset color
+  const color = account.color === 'custom' && account.customColor 
+    ? account.customColor 
+    : ACCOUNT_COLORS[account.color];
 
   if (compact) {
     return (

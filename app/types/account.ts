@@ -18,7 +18,86 @@ export type AccountIcon =
   | 'technology'
   | 'fitness'
   | 'gifts'
-  | 'savings';
+  | 'savings'
+  | 'bank'
+  | 'wallet'
+  | 'credit-card'
+  | 'piggy-bank'
+  | 'chart'
+  | 'shopping'
+  | 'coffee'
+  | 'pet'
+  | 'baby'
+  | 'wedding'
+  | 'vacation'
+  | 'sports'
+  | 'music'
+  | 'books'
+  | 'art'
+  | 'tools'
+  | 'phone'
+  | 'computer'
+  | 'camera'
+  | 'gaming'
+  | 'streaming'
+  | 'electricity'
+  | 'water'
+  | 'gas'
+  | 'internet'
+  | 'insurance'
+  | 'taxes'
+  | 'rent'
+  | 'debt'
+  | 'investment'
+  | 'emergency'
+  | 'party'
+  | 'restaurant'
+  | 'haircut'
+  | 'spa'
+  | 'medicine'
+  | 'dental'
+  | 'glasses'
+  | 'bicycle'
+  | 'bus'
+  | 'train'
+  | 'plane'
+  | 'boat'
+  | 'charity'
+  | 'church'
+  | 'star'
+  | 'heart'
+  | 'diamond'
+  | 'crown'
+  | 'trophy'
+  | 'target'
+  | 'rocket'
+  | 'fire'
+  | 'snowflake'
+  | 'sun'
+  | 'moon'
+  | 'rainbow'
+  | 'umbrella'
+  | 'briefcase'
+  | 'graduation'
+  | 'ring'
+  | 'key'
+  | 'lock'
+  | 'calendar'
+  | 'clock'
+  | 'alarm'
+  | 'gift-card'
+  | 'coupon'
+  | 'receipt'
+  | 'calculator'
+  | 'folder'
+  | 'box'
+  | 'package'
+  | 'truck'
+  | 'building'
+  | 'factory'
+  | 'hospital'
+  | 'school'
+  | 'library';
 
 export type AccountColor =
   | 'jet-black'
@@ -30,7 +109,8 @@ export type AccountColor =
   | 'amber'
   | 'rose'
   | 'violet'
-  | 'slate';
+  | 'slate'
+  | 'custom';
 
 export interface Account {
   id: string;
@@ -39,6 +119,7 @@ export interface Account {
   amount: number;
   icon: AccountIcon;
   color: AccountColor;
+  customColor?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -49,6 +130,7 @@ export interface CreateAccountDTO {
   amount: number;
   icon: AccountIcon;
   color: AccountColor;
+  customColor?: string;
 }
 
 export interface UpdateAccountDTO {
@@ -57,6 +139,7 @@ export interface UpdateAccountDTO {
   amount?: number;
   icon?: AccountIcon;
   color?: AccountColor;
+  customColor?: string;
 }
 
 export const ACCOUNT_ICONS: Record<AccountIcon, string> = {
@@ -75,6 +158,85 @@ export const ACCOUNT_ICONS: Record<AccountIcon, string> = {
   fitness: '💪',
   gifts: '🎁',
   savings: '📦',
+  bank: '🏦',
+  wallet: '👛',
+  'credit-card': '💳',
+  'piggy-bank': '🐷',
+  chart: '📈',
+  shopping: '🛍️',
+  coffee: '☕',
+  pet: '🐾',
+  baby: '👶',
+  wedding: '💒',
+  vacation: '🏖️',
+  sports: '⚽',
+  music: '🎵',
+  books: '📚',
+  art: '🎨',
+  tools: '🔧',
+  phone: '📞',
+  computer: '💻',
+  camera: '📷',
+  gaming: '🎲',
+  streaming: '📺',
+  electricity: '⚡',
+  water: '💧',
+  gas: '🔥',
+  internet: '🌐',
+  insurance: '🛡️',
+  taxes: '🏛️',
+  rent: '🔑',
+  debt: '📉',
+  investment: '📊',
+  emergency: '🚨',
+  party: '🎉',
+  restaurant: '🍴',
+  haircut: '💇',
+  spa: '🧖',
+  medicine: '💉',
+  dental: '🦷',
+  glasses: '👓',
+  bicycle: '🚲',
+  bus: '🚌',
+  train: '🚆',
+  plane: '🛫',
+  boat: '⛵',
+  charity: '🤝',
+  church: '⛪',
+  star: '⭐',
+  heart: '❤️',
+  diamond: '💎',
+  crown: '👑',
+  trophy: '🏆',
+  target: '🎯',
+  rocket: '🚀',
+  fire: '🔥',
+  snowflake: '❄️',
+  sun: '☀️',
+  moon: '🌙',
+  rainbow: '🌈',
+  umbrella: '☂️',
+  briefcase: '💼',
+  graduation: '🎓',
+  ring: '💍',
+  key: '🗝️',
+  lock: '🔒',
+  calendar: '📅',
+  clock: '⏰',
+  alarm: '⏰',
+  'gift-card': '🎫',
+  coupon: '🎟️',
+  receipt: '🧾',
+  calculator: '🧮',
+  folder: '📁',
+  box: '📦',
+  package: '📬',
+  truck: '🚚',
+  building: '🏢',
+  factory: '🏭',
+  hospital: '🏥',
+  school: '🏫',
+  library: '📖',
 };
 
 export const ACCOUNT_COLORS: Record<AccountColor, string> = {
@@ -88,4 +250,5 @@ export const ACCOUNT_COLORS: Record<AccountColor, string> = {
   'rose': '#F43F5E',
   'violet': '#8B5CF6',
   'slate': '#64748B',
+  'custom': '#000000',
 };

@@ -136,6 +136,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       amount: data.amount,
       icon: data.icon,
       color: data.color,
+      customColor: data.customColor,
       createdAt: timestamp,
       updatedAt: timestamp,
     };

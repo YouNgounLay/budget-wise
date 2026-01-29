@@ -11,6 +11,8 @@ import {
   CreateAccountDTO,
   AccountIcon,
   AccountColor,
+  ACCOUNT_ICONS,
+  ACCOUNT_COLORS,
 } from '@/app/types/account';
 import { Button, Input, Modal } from '@/app/components/shared';
 import { IconPicker } from './IconPicker';
@@ -30,6 +32,7 @@ const defaultFormData: CreateAccountDTO = {
   amount: 0,
   icon: 'money',
   color: 'french-blue',
+  customColor: '#4a86e8',
 };
 
 export function AccountForm({
@@ -41,6 +44,7 @@ export function AccountForm({
 }: AccountFormProps) {
   const [formData, setFormData] = useState<CreateAccountDTO>(defaultFormData);
   const [errors, setErrors] = useState<Partial<Record<keyof CreateAccountDTO, string>>>({});
+  const [showAppearance, setShowAppearance] = useState(false);
 
   // Reset form when modal opens/closes or account changes
   useEffect(() => {
@@ -51,10 +55,13 @@ export function AccountForm({
         amount: account.amount,
         icon: account.icon,
         color: account.color,
+        customColor: account.customColor || '#4a86e8',
       });
+      setShowAppearance(false);
     } else if (!isOpen) {
       setFormData(defaultFormData);
       setErrors({});
+      setShowAppearance(false);
     }
   }, [isOpen, account]);
 
@@ -96,6 +103,12 @@ export function AccountForm({
   };
 
   const modalTitle = title || (account ? 'Edit Account' : 'Create Account');
+  
+  // Get current icon and color for preview
+  const currentIcon = ACCOUNT_ICONS[formData.icon];
+  const currentColor = formData.color === 'custom' && formData.customColor 
+    ? formData.customColor 
+    : ACCOUNT_COLORS[formData.color];
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={modalTitle} size="lg">
@@ -127,17 +140,58 @@ export function AccountForm({
           error={errors.amount}
         />
 
-        <IconPicker
-          label="Select Icon"
-          value={formData.icon}
-          onChange={(icon: AccountIcon) => handleChange('icon', icon)}
-        />
+        {/* Appearance Section */}
+        <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowAppearance(!showAppearance)}
+            className="w-full flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              {/* Preview of current icon and color */}
+              <div 
+                className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
+                style={{ backgroundColor: currentColor }}
+              >
+                <span className="drop-shadow-sm">{currentIcon}</span>
+              </div>
+              <div className="text-left">
+                <p className="text-sm font-medium text-jet-black dark:text-white">
+                  Appearance
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Icon & Color
+                </p>
+              </div>
+            </div>
+            <svg 
+              className={`w-5 h-5 text-slate-500 transition-transform ${showAppearance ? 'rotate-180' : ''}`}
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          
+          {showAppearance && (
+            <div className="p-4 space-y-4 border-t border-slate-200 dark:border-slate-700 max-h-72 overflow-y-auto">
+              <IconPicker
+                label="Select Icon"
+                value={formData.icon}
+                onChange={(icon: AccountIcon) => handleChange('icon', icon)}
+              />
 
-        <ColorPicker
-          label="Select Color"
-          value={formData.color}
-          onChange={(color: AccountColor) => handleChange('color', color)}
-        />
+              <ColorPicker
+                label="Select Color"
+                value={formData.color}
+                onChange={(color: AccountColor) => handleChange('color', color)}
+                customColorValue={formData.customColor}
+                onCustomColorChange={(hex) => handleChange('customColor', hex)}
+              />
+            </div>
+          )}
+        </div>
 
         <div className="flex gap-3 pt-4">
           <Button type="button" variant="secondary" onClick={onClose} fullWidth>

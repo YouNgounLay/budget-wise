@@ -5,7 +5,7 @@
  * Modal for adding, removing, and reordering accounts in a chain
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Chain } from '@/app/types/chain';
 import { Account, ACCOUNT_ICONS, ACCOUNT_COLORS } from '@/app/types/account';
 import { formatCurrency } from '@/app/utils/helpers';
@@ -20,6 +20,7 @@ interface ManageChainAccountsModalProps {
   onRemoveAccount: (chainId: string, accountId: string) => void;
   onReorder: (chainId: string, newOrder: string[]) => void;
   onUpdateLimit: (chainId: string, accountId: string, newLimit: number) => void;
+  onSetOverflowAccount: (chainId: string, accountId: string | null) => void;
 }
 
 export function ManageChainAccountsModal({
@@ -31,6 +32,7 @@ export function ManageChainAccountsModal({
   onRemoveAccount,
   onReorder,
   onUpdateLimit,
+  onSetOverflowAccount,
 }: ManageChainAccountsModalProps) {
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
   const [newLimit, setNewLimit] = useState<string>('');
@@ -47,50 +49,74 @@ export function ManageChainAccountsModal({
     }
   }, [isOpen]);
 
-  if (!chain) return null;
+  // Memoize expensive computations
+  const chainAccountIds = useMemo(() => 
+    new Set(chain?.accounts.map((ca) => ca.accountId) ?? []),
+    [chain?.accounts]
+  );
 
-  // Get accounts not in the chain
-  const chainAccountIds = new Set(chain.accounts.map((ca) => ca.accountId));
-  const availableAccounts = accounts.filter((a) => !chainAccountIds.has(a.id));
+  const availableAccounts = useMemo(() => 
+    accounts.filter(
+      (a) => !chainAccountIds.has(a.id) && a.id !== chain?.overflowAccountId
+    ),
+    [accounts, chainAccountIds, chain?.overflowAccountId]
+  );
 
-  // Get chain accounts with full data
-  const chainAccountsWithData = chain.accounts
-    .map((ca) => {
-      const account = accounts.find((a) => a.id === ca.accountId);
-      return account ? { ...account, limit: ca.limit } : null;
-    })
-    .filter(Boolean) as (Account & { limit: number })[];
+  const availableForOverflow = useMemo(() => 
+    accounts.filter((a) => !chainAccountIds.has(a.id)),
+    [accounts, chainAccountIds]
+  );
 
-  const handleAddAccount = () => {
-    if (!selectedAccountId) return;
+  const overflowAccount = useMemo(() => 
+    chain?.overflowAccountId
+      ? accounts.find((a) => a.id === chain.overflowAccountId)
+      : null,
+    [accounts, chain?.overflowAccountId]
+  );
+
+  const chainAccountsWithData = useMemo(() => 
+    (chain?.accounts ?? [])
+      .map((ca) => {
+        const account = accounts.find((a) => a.id === ca.accountId);
+        return account ? { ...account, limit: ca.limit } : null;
+      })
+      .filter(Boolean) as (Account & { limit: number })[],
+    [chain?.accounts, accounts]
+  );
+
+  const handleAddAccount = useCallback(() => {
+    if (!selectedAccountId || !chain) return;
     const limit = newLimit ? parseFloat(newLimit) : undefined;
     onAddAccount(chain.id, selectedAccountId, limit);
     setSelectedAccountId('');
     setNewLimit('');
-  };
+  }, [selectedAccountId, newLimit, chain, onAddAccount]);
 
-  const handleMoveUp = (index: number) => {
-    if (index === 0) return;
+  const handleMoveUp = useCallback((index: number) => {
+    if (index === 0 || !chain) return;
     const newOrder = chain.accounts.map((ca) => ca.accountId);
     [newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
     onReorder(chain.id, newOrder);
-  };
+  }, [chain, onReorder]);
 
-  const handleMoveDown = (index: number) => {
-    if (index === chain.accounts.length - 1) return;
+  const handleMoveDown = useCallback((index: number) => {
+    if (!chain || index === chain.accounts.length - 1) return;
     const newOrder = chain.accounts.map((ca) => ca.accountId);
     [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
     onReorder(chain.id, newOrder);
-  };
+  }, [chain, onReorder]);
 
-  const handleSaveLimit = (accountId: string) => {
+  const handleSaveLimit = useCallback((accountId: string) => {
+    if (!chain) return;
     const newLimitNum = parseFloat(editLimitValue);
     if (!isNaN(newLimitNum) && newLimitNum >= 0) {
       onUpdateLimit(chain.id, accountId, newLimitNum);
     }
     setEditingLimitId(null);
     setEditLimitValue('');
-  };
+  }, [chain, editLimitValue, onUpdateLimit]);
+
+  if (!isOpen || !chain) return null;
 
   return (
     <Modal
@@ -269,6 +295,56 @@ export function ManageChainAccountsModal({
                   </button>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+
+        {/* Overflow Account Section */}
+        <div className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-lg border-2 border-dashed border-emerald-300 dark:border-emerald-700">
+          <h4 className="font-medium text-jet-black dark:text-white mb-3 flex items-center gap-2">
+            <span className="text-lg">∞</span>
+            Overflow Account (No Limit)
+          </h4>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+            Any remaining funds after all accounts reach their limits will go here.
+          </p>
+          
+          {overflowAccount ? (
+            <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg border border-emerald-200 dark:border-emerald-700">
+              <div className="flex items-center gap-3">
+                <span className="text-xl">{ACCOUNT_ICONS[overflowAccount.icon]}</span>
+                <div>
+                  <p className="font-medium text-jet-black dark:text-white">
+                    {overflowAccount.name}
+                  </p>
+                  <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                    Balance: {formatCurrency(overflowAccount.amount)}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => onSetOverflowAccount(chain.id, null)}
+                className="px-3 py-1.5 text-sm text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-900/30 rounded-lg transition-colors"
+              >
+                Remove
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <Select
+                options={availableForOverflow.map((a) => ({
+                  value: a.id,
+                  label: `${ACCOUNT_ICONS[a.icon]} ${a.name}`,
+                }))}
+                value=""
+                onChange={(e) => {
+                  if (e.target.value) {
+                    onSetOverflowAccount(chain.id, e.target.value);
+                  }
+                }}
+                placeholder="Select overflow account"
+                className="flex-1"
+              />
             </div>
           )}
         </div>

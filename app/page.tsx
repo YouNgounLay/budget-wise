@@ -28,7 +28,7 @@ import { formatCurrency } from './utils/helpers';
 
 export default function Dashboard() {
   const { state: accountState, createAccount, updateAccount, deleteAccount, depositToAccount, withdrawFromAccount, updateAccountsFromDeposit } = useAccounts();
-  const { state: chainState, createChain, updateChain, deleteChain, addAccountToChain, removeAccountFromChain, reorderChainAccounts, updateAccountLimitInChain } = useChains();
+  const { state: chainState, createChain, updateChain, deleteChain, addAccountToChain, removeAccountFromChain, reorderChainAccounts, updateAccountLimitInChain, setOverflowAccount } = useChains();
 
   // Account modals
   const [isAccountFormOpen, setIsAccountFormOpen] = useState(false);
@@ -39,8 +39,12 @@ export default function Dashboard() {
   // Chain modals
   const [isChainFormOpen, setIsChainFormOpen] = useState(false);
   const [editingChain, setEditingChain] = useState<Chain | undefined>();
-  const [depositChain, setDepositChain] = useState<Chain | null>(null);
-  const [managingChain, setManagingChain] = useState<Chain | null>(null);
+  const [depositChainId, setDepositChainId] = useState<string | null>(null);
+  const [managingChainId, setManagingChainId] = useState<string | null>(null);
+
+  // Get live chain data from state
+  const depositChain = depositChainId ? chainState.chains.find(c => c.id === depositChainId) || null : null;
+  const managingChain = managingChainId ? chainState.chains.find(c => c.id === managingChainId) || null : null;
 
   // Calculate totals
   const totalBalance = accountState.accounts.reduce((sum, acc) => sum + acc.amount, 0);
@@ -199,8 +203,8 @@ export default function Dashboard() {
             accounts={accountState.accounts}
             onEdit={handleEditChain}
             onDelete={handleDeleteChain}
-            onDeposit={(chain) => setDepositChain(chain)}
-            onManageAccounts={(chain) => setManagingChain(chain)}
+            onDeposit={(chain) => setDepositChainId(chain.id)}
+            onManageAccounts={(chain) => setManagingChainId(chain.id)}
           />
         </section>
       </div>
@@ -238,8 +242,8 @@ export default function Dashboard() {
 
       {/* Chain Deposit Modal */}
       <ChainDepositModal
-        isOpen={!!depositChain}
-        onClose={() => setDepositChain(null)}
+        isOpen={!!depositChainId}
+        onClose={() => setDepositChainId(null)}
         chain={depositChain}
         accounts={accountState.accounts}
         onConfirmDeposit={handleChainDeposit}
@@ -247,14 +251,15 @@ export default function Dashboard() {
 
       {/* Manage Chain Accounts Modal */}
       <ManageChainAccountsModal
-        isOpen={!!managingChain}
-        onClose={() => setManagingChain(null)}
+        isOpen={!!managingChainId}
+        onClose={() => setManagingChainId(null)}
         chain={managingChain}
         accounts={accountState.accounts}
         onAddAccount={addAccountToChain}
         onRemoveAccount={removeAccountFromChain}
         onReorder={reorderChainAccounts}
         onUpdateLimit={updateAccountLimitInChain}
+        onSetOverflowAccount={setOverflowAccount}
       />
     </MainLayout>
   );

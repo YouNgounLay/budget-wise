@@ -10,6 +10,9 @@ import React, {
   useContext,
   useReducer,
   useEffect,
+  useCallback,
+  useMemo,
+  useRef,
   ReactNode,
 } from 'react';
 import {
@@ -95,6 +98,7 @@ const AccountContext = createContext<AccountContextType | undefined>(undefined);
 // Provider component
 export function AccountProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(accountReducer, initialState);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load accounts from storage on mount
   useEffect(() => {
@@ -102,14 +106,28 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'SET_ACCOUNTS', payload: accounts });
   }, []);
 
-  // Save accounts to storage whenever they change
+  // Debounced save to storage whenever accounts change
   useEffect(() => {
-    if (!state.isLoading) {
-      saveAllAccounts(state.accounts);
+    if (state.isLoading) return;
+
+    // Clear any pending save
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
     }
+
+    // Debounce the save operation
+    saveTimeoutRef.current = setTimeout(() => {
+      saveAllAccounts(state.accounts);
+    }, 300);
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
   }, [state.accounts, state.isLoading]);
 
-  const createAccount = (data: CreateAccountDTO): Account => {
+  const createAccount = useCallback((data: CreateAccountDTO): Account => {
     const timestamp = getCurrentTimestamp();
     const newAccount: Account = {
       id: generateId(),
@@ -123,9 +141,9 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     };
     dispatch({ type: 'ADD_ACCOUNT', payload: newAccount });
     return newAccount;
-  };
+  }, []);
 
-  const updateAccount = (
+  const updateAccount = useCallback((
     id: string,
     data: UpdateAccountDTO
   ): Account | null => {
@@ -139,53 +157,74 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     };
     dispatch({ type: 'UPDATE_ACCOUNT', payload: updatedAccount });
     return updatedAccount;
-  };
+  }, [state.accounts]);
 
-  const deleteAccount = (id: string): boolean => {
+  const deleteAccount = useCallback((id: string): boolean => {
     const exists = state.accounts.some((acc) => acc.id === id);
     if (!exists) return false;
 
     dispatch({ type: 'DELETE_ACCOUNT', payload: id });
     return true;
-  };
+  }, [state.accounts]);
 
-  const getAccountById = (id: string): Account | undefined => {
+  const getAccountById = useCallback((id: string): Account | undefined => {
     return state.accounts.find((acc) => acc.id === id);
-  };
+  }, [state.accounts]);
 
-  const depositToAccount = (id: string, amount: number): Account | null => {
+  const depositToAccount = useCallback((id: string, amount: number): Account | null => {
     if (amount <= 0) return null;
     const account = state.accounts.find((acc) => acc.id === id);
     if (!account) return null;
 
-    return updateAccount(id, { amount: account.amount + amount });
-  };
+    const updatedAccount: Account = {
+      ...account,
+      amount: account.amount + amount,
+      updatedAt: getCurrentTimestamp(),
+    };
+    dispatch({ type: 'UPDATE_ACCOUNT', payload: updatedAccount });
+    return updatedAccount;
+  }, [state.accounts]);
 
-  const withdrawFromAccount = (id: string, amount: number): Account | null => {
+  const withdrawFromAccount = useCallback((id: string, amount: number): Account | null => {
     if (amount <= 0) return null;
     const account = state.accounts.find((acc) => acc.id === id);
     if (!account || account.amount < amount) return null;
 
-    return updateAccount(id, { amount: account.amount - amount });
-  };
+    const updatedAccount: Account = {
+      ...account,
+      amount: account.amount - amount,
+      updatedAt: getCurrentTimestamp(),
+    };
+    dispatch({ type: 'UPDATE_ACCOUNT', payload: updatedAccount });
+    return updatedAccount;
+  }, [state.accounts]);
 
-  const updateAccountsFromDeposit = (updatedAccounts: Account[]): void => {
+  const updateAccountsFromDeposit = useCallback((updatedAccounts: Account[]): void => {
     dispatch({ type: 'SET_ACCOUNTS', payload: updatedAccounts });
-  };
+  }, []);
+
+  const contextValue = useMemo(() => ({
+    state,
+    createAccount,
+    updateAccount,
+    deleteAccount,
+    getAccountById,
+    depositToAccount,
+    withdrawFromAccount,
+    updateAccountsFromDeposit,
+  }), [
+    state,
+    createAccount,
+    updateAccount,
+    deleteAccount,
+    getAccountById,
+    depositToAccount,
+    withdrawFromAccount,
+    updateAccountsFromDeposit,
+  ]);
 
   return (
-    <AccountContext.Provider
-      value={{
-        state,
-        createAccount,
-        updateAccount,
-        deleteAccount,
-        getAccountById,
-        depositToAccount,
-        withdrawFromAccount,
-        updateAccountsFromDeposit,
-      }}
-    >
+    <AccountContext.Provider value={contextValue}>
       {children}
     </AccountContext.Provider>
   );

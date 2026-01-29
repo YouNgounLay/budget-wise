@@ -10,6 +10,9 @@ import React, {
   useContext,
   useReducer,
   useEffect,
+  useCallback,
+  useMemo,
+  useRef,
   ReactNode,
 } from 'react';
 import {
@@ -58,6 +61,7 @@ interface ChainContextType {
     accountId: string,
     newLimit: number
   ) => Chain | null;
+  setOverflowAccount: (chainId: string, accountId: string | null) => Chain | null;
 }
 
 // Initial state
@@ -101,6 +105,7 @@ const ChainContext = createContext<ChainContextType | undefined>(undefined);
 // Provider component
 export function ChainProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(chainReducer, initialState);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load chains from storage on mount
   useEffect(() => {
@@ -108,29 +113,44 @@ export function ChainProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'SET_CHAINS', payload: chains });
   }, []);
 
-  // Save chains to storage whenever they change
+  // Debounced save to storage whenever chains change
   useEffect(() => {
-    if (!state.isLoading) {
-      saveAllChains(state.chains);
+    if (state.isLoading) return;
+
+    // Clear any pending save
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
     }
+
+    // Debounce the save operation
+    saveTimeoutRef.current = setTimeout(() => {
+      saveAllChains(state.chains);
+    }, 300);
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
   }, [state.chains, state.isLoading]);
 
-  const createChain = (data: CreateChainDTO): Chain => {
+  const createChain = useCallback((data: CreateChainDTO): Chain => {
     const timestamp = getCurrentTimestamp();
     const newChain: Chain = {
       id: generateId(),
       name: data.name,
       description: data.description,
       accounts: [],
+      overflowAccountId: null,
       defaultLimit: data.defaultLimit ?? DEFAULT_LIMIT,
       createdAt: timestamp,
       updatedAt: timestamp,
     };
     dispatch({ type: 'ADD_CHAIN', payload: newChain });
     return newChain;
-  };
+  }, []);
 
-  const updateChain = (id: string, data: UpdateChainDTO): Chain | null => {
+  const updateChain = useCallback((id: string, data: UpdateChainDTO): Chain | null => {
     const chain = state.chains.find((c) => c.id === id);
     if (!chain) return null;
 
@@ -141,21 +161,21 @@ export function ChainProvider({ children }: { children: ReactNode }) {
     };
     dispatch({ type: 'UPDATE_CHAIN', payload: updatedChain });
     return updatedChain;
-  };
+  }, [state.chains]);
 
-  const deleteChain = (id: string): boolean => {
+  const deleteChain = useCallback((id: string): boolean => {
     const exists = state.chains.some((c) => c.id === id);
     if (!exists) return false;
 
     dispatch({ type: 'DELETE_CHAIN', payload: id });
     return true;
-  };
+  }, [state.chains]);
 
-  const getChainById = (id: string): Chain | undefined => {
+  const getChainById = useCallback((id: string): Chain | undefined => {
     return state.chains.find((c) => c.id === id);
-  };
+  }, [state.chains]);
 
-  const addAccountToChain = (
+  const addAccountToChain = useCallback((
     chainId: string,
     accountId: string,
     limit?: number
@@ -163,8 +183,11 @@ export function ChainProvider({ children }: { children: ReactNode }) {
     const chain = state.chains.find((c) => c.id === chainId);
     if (!chain) return null;
 
-    // Check if account already exists
-    if (chain.accounts.some((acc) => acc.accountId === accountId)) {
+    // Check if account already exists or is the overflow account
+    if (
+      chain.accounts.some((acc) => acc.accountId === accountId) ||
+      chain.overflowAccountId === accountId
+    ) {
       return null;
     }
 
@@ -181,9 +204,9 @@ export function ChainProvider({ children }: { children: ReactNode }) {
 
     dispatch({ type: 'UPDATE_CHAIN', payload: updatedChain });
     return updatedChain;
-  };
+  }, [state.chains]);
 
-  const removeAccountFromChain = (
+  const removeAccountFromChain = useCallback((
     chainId: string,
     accountId: string
   ): Chain | null => {
@@ -204,9 +227,9 @@ export function ChainProvider({ children }: { children: ReactNode }) {
 
     dispatch({ type: 'UPDATE_CHAIN', payload: updatedChain });
     return updatedChain;
-  };
+  }, [state.chains]);
 
-  const reorderChainAccounts = (
+  const reorderChainAccounts = useCallback((
     chainId: string,
     newOrder: string[]
   ): Chain | null => {
@@ -235,9 +258,9 @@ export function ChainProvider({ children }: { children: ReactNode }) {
 
     dispatch({ type: 'UPDATE_CHAIN', payload: updatedChain });
     return updatedChain;
-  };
+  }, [state.chains]);
 
-  const updateAccountLimitInChain = (
+  const updateAccountLimitInChain = useCallback((
     chainId: string,
     accountId: string,
     newLimit: number
@@ -257,22 +280,56 @@ export function ChainProvider({ children }: { children: ReactNode }) {
 
     dispatch({ type: 'UPDATE_CHAIN', payload: updatedChain });
     return updatedChain;
-  };
+  }, [state.chains]);
+
+  const setOverflowAccount = useCallback((
+    chainId: string,
+    accountId: string | null
+  ): Chain | null => {
+    const chain = state.chains.find((c) => c.id === chainId);
+    if (!chain) return null;
+
+    // If setting an account, ensure it's not already in the chain's regular accounts
+    if (accountId && chain.accounts.some((acc) => acc.accountId === accountId)) {
+      return null;
+    }
+
+    const updatedChain: Chain = {
+      ...chain,
+      overflowAccountId: accountId,
+      updatedAt: getCurrentTimestamp(),
+    };
+
+    dispatch({ type: 'UPDATE_CHAIN', payload: updatedChain });
+    return updatedChain;
+  }, [state.chains]);
+
+  const contextValue = useMemo(() => ({
+    state,
+    createChain,
+    updateChain,
+    deleteChain,
+    getChainById,
+    addAccountToChain,
+    removeAccountFromChain,
+    reorderChainAccounts,
+    updateAccountLimitInChain,
+    setOverflowAccount,
+  }), [
+    state,
+    createChain,
+    updateChain,
+    deleteChain,
+    getChainById,
+    addAccountToChain,
+    removeAccountFromChain,
+    reorderChainAccounts,
+    updateAccountLimitInChain,
+    setOverflowAccount,
+  ]);
 
   return (
-    <ChainContext.Provider
-      value={{
-        state,
-        createChain,
-        updateChain,
-        deleteChain,
-        getChainById,
-        addAccountToChain,
-        removeAccountFromChain,
-        reorderChainAccounts,
-        updateAccountLimitInChain,
-      }}
-    >
+    <ChainContext.Provider value={contextValue}>
       {children}
     </ChainContext.Provider>
   );

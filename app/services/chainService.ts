@@ -36,6 +36,7 @@ export function createChain(data: CreateChainDTO): Chain {
     name: data.name,
     description: data.description,
     accounts: [],
+    overflowAccountId: null,
     defaultLimit: data.defaultLimit ?? DEFAULT_LIMIT,
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -96,7 +97,8 @@ export function addAccountToChain(
   const accountExists = chain.accounts.some(
     (acc) => acc.accountId === accountId
   );
-  if (accountExists) return null;
+  // Also check if it's the overflow account
+  if (accountExists || chain.overflowAccountId === accountId) return null;
 
   const newAccountConfig: ChainAccountConfig = {
     accountId,
@@ -191,6 +193,36 @@ function updateChainAccounts(
   chains[index] = {
     ...chains[index],
     accounts,
+    updatedAt: getCurrentTimestamp(),
+  };
+
+  setToStorage(STORAGE_KEYS.CHAINS, chains);
+  return chains[index];
+}
+
+/**
+ * Sets or removes the overflow account for a chain
+ */
+export function setOverflowAccount(
+  chainId: string,
+  accountId: string | null
+): Chain | null {
+  const chains = getAllChains();
+  const index = chains.findIndex((chain) => chain.id === chainId);
+
+  if (index === -1) return null;
+
+  // If setting an account, ensure it's not already in the chain's regular accounts
+  if (accountId) {
+    const accountInChain = chains[index].accounts.some(
+      (acc) => acc.accountId === accountId
+    );
+    if (accountInChain) return null;
+  }
+
+  chains[index] = {
+    ...chains[index],
+    overflowAccountId: accountId,
     updatedAt: getCurrentTimestamp(),
   };
 

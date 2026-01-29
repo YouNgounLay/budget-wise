@@ -13,6 +13,7 @@ export interface Chain {
   name: string;
   description: string;
   accounts: ChainAccountConfig[];
+  overflowAccountId: string | null; // Account with no limit at the end of chain
   defaultLimit: number;
   createdAt: string;
   updatedAt: string;

@@ -6,7 +6,6 @@
  */
 
 import React from 'react';
-import Link from 'next/link';
 import { ThemeToggle } from '../shared/ThemeToggle';
 
 export function Header() {
@@ -15,36 +14,36 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
+          <a href="/" className="flex items-center gap-2">
             <span className="text-2xl">💰</span>
             <span className="text-xl font-bold text-jet-black dark:text-white">
               Budget<span className="text-french-blue">Wise</span>
             </span>
-          </Link>
+          </a>
 
           {/* Navigation */}
           <nav className="hidden md:flex items-center gap-6">
-            <Link
+            <a
               href="/"
               className="nav-link text-slate-600 dark:text-slate-300 hover:text-french-blue dark:hover:text-fresh-sky transition-all no-underline"
               style={{ textDecoration: 'none' }}
             >
               Dashboard
-            </Link>
-            <Link
+            </a>
+            <a
               href="/accounts"
               className="nav-link text-slate-600 dark:text-slate-300 hover:text-french-blue dark:hover:text-fresh-sky transition-all no-underline"
               style={{ textDecoration: 'none' }}
             >
               Accounts
-            </Link>
-            <Link
+            </a>
+            <a
               href="/chains"
               className="nav-link text-slate-600 dark:text-slate-300 hover:text-french-blue dark:hover:text-fresh-sky transition-all no-underline"
               style={{ textDecoration: 'none' }}
             >
               Chains
-            </Link>
+            </a>
           </nav>
 
           {/* Actions */}

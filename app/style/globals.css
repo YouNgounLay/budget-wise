@@ -50,13 +50,18 @@ body {
 /* ============================
    Hyperlink Styles
    ============================ */
-a {
+a,
+a:link,
+a:visited,
+a:hover,
+a:active {
   text-decoration: none !important;
-  transition: color 0.3s ease;
+  border-bottom: none !important;
+  outline: none !important;
 }
 
-a:hover {
-  text-decoration: none !important;
+a {
+  transition: color 0.3s ease;
 }
 
 /* ============================

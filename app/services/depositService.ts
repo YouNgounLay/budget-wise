@@ -75,6 +75,21 @@ export function depositToChain(
     }
   }
 
+  // If there's remaining amount and an overflow account exists, deposit the rest there
+  if (remainingAmount > 0 && chain.overflowAccountId) {
+    const overflowAccount = accounts.find((a) => a.id === chain.overflowAccountId);
+    if (overflowAccount) {
+      const newBalance = overflowAccount.amount + remainingAmount;
+      deposits.push({
+        accountId: overflowAccount.id,
+        accountName: overflowAccount.name,
+        amount: remainingAmount,
+        newBalance,
+      });
+      remainingAmount = 0;
+    }
+  }
+
   const totalDeposited = amount - remainingAmount;
 
   if (totalDeposited === 0) {

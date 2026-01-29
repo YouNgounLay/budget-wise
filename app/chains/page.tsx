@@ -30,13 +30,18 @@ export default function ChainsPage() {
     removeAccountFromChain,
     reorderChainAccounts,
     updateAccountLimitInChain,
+    setOverflowAccount,
   } = useChains();
 
   // Modal states
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingChain, setEditingChain] = useState<Chain | undefined>();
-  const [depositChain, setDepositChain] = useState<Chain | null>(null);
-  const [managingChain, setManagingChain] = useState<Chain | null>(null);
+  const [depositChainId, setDepositChainId] = useState<string | null>(null);
+  const [managingChainId, setManagingChainId] = useState<string | null>(null);
+
+  // Get live chain data from state
+  const depositChain = depositChainId ? chainState.chains.find(c => c.id === depositChainId) || null : null;
+  const managingChain = managingChainId ? chainState.chains.find(c => c.id === managingChainId) || null : null;
 
   // Handlers
   const handleCreate = (data: CreateChainDTO) => {
@@ -116,8 +121,8 @@ export default function ChainsPage() {
           accounts={accountState.accounts}
           onEdit={handleEdit}
           onDelete={handleDelete}
-          onDeposit={(chain) => setDepositChain(chain)}
-          onManageAccounts={(chain) => setManagingChain(chain)}
+          onDeposit={(chain) => setDepositChainId(chain.id)}
+          onManageAccounts={(chain) => setManagingChainId(chain.id)}
         />
       </div>
 
@@ -134,8 +139,8 @@ export default function ChainsPage() {
 
       {/* Chain Deposit Modal */}
       <ChainDepositModal
-        isOpen={!!depositChain}
-        onClose={() => setDepositChain(null)}
+        isOpen={!!depositChainId}
+        onClose={() => setDepositChainId(null)}
         chain={depositChain}
         accounts={accountState.accounts}
         onConfirmDeposit={handleChainDeposit}
@@ -143,14 +148,15 @@ export default function ChainsPage() {
 
       {/* Manage Chain Accounts Modal */}
       <ManageChainAccountsModal
-        isOpen={!!managingChain}
-        onClose={() => setManagingChain(null)}
+        isOpen={!!managingChainId}
+        onClose={() => setManagingChainId(null)}
         chain={managingChain}
         accounts={accountState.accounts}
         onAddAccount={addAccountToChain}
         onRemoveAccount={removeAccountFromChain}
         onReorder={reorderChainAccounts}
         onUpdateLimit={updateAccountLimitInChain}
+        onSetOverflowAccount={setOverflowAccount}
       />
     </MainLayout>
   );

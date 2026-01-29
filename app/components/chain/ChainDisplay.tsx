@@ -39,6 +39,11 @@ export function ChainDisplay({
     })
     .filter(Boolean) as (Account & { limit: number })[];
 
+  // Get overflow account if set
+  const overflowAccount = chain.overflowAccountId
+    ? accounts.find((a) => a.id === chain.overflowAccountId)
+    : null;
+
   if (compact) {
     return (
       <div className="flex items-center gap-2 p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
@@ -170,6 +175,48 @@ export function ChainDisplay({
                 )}
               </React.Fragment>
             ))}
+
+            {/* Overflow account (no limit) */}
+            {overflowAccount && (
+              <>
+                {/* Arrow to overflow */}
+                {chainAccounts.length > 0 && (
+                  <svg
+                    className="w-6 h-6 text-slate-400 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 7l5 5m0 0l-5 5m5-5H6"
+                    />
+                  </svg>
+                )}
+                {/* Overflow account chip */}
+                <div
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/30 dark:to-teal-900/30 border-2 border-dashed border-emerald-400 dark:border-emerald-600"
+                  style={{
+                    borderLeft: `3px solid ${ACCOUNT_COLORS[overflowAccount.color]}`,
+                  }}
+                >
+                  <span className="text-xl">{ACCOUNT_ICONS[overflowAccount.icon]}</span>
+                  <div className="text-sm">
+                    <p className="font-medium text-jet-black dark:text-white flex items-center gap-1">
+                      {overflowAccount.name}
+                      <span className="text-xs px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-300">
+                        ∞
+                      </span>
+                    </p>
+                    <p className="text-slate-500 dark:text-slate-400">
+                      {formatCurrency(overflowAccount.amount)} <span className="text-emerald-600 dark:text-emerald-400">· No limit</span>
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>

@@ -8,3 +8,4 @@ export { Input } from './Input';
 export { Card, CardHeader, CardBody, CardFooter } from './Card';
 export { Modal } from './Modal';
 export { Select } from './Select';
+export { ThemeToggle } from './ThemeToggle';

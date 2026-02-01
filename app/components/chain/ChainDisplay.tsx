@@ -38,6 +38,7 @@ export function ChainDisplay({
       return account ? { ...account, limit: ca.limit } : null;
     })
     .filter(Boolean) as (Account & { limit: number })[];
+  console.log(chainAccounts);
 
   // Get overflow account if set
   const overflowAccount = chain.overflowAccountId

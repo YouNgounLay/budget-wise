@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { ThemeToggle } from '../shared/ThemeToggle';
+import { ThemeSelector } from '../shared/ThemeSelector';
 
 export function Header() {
   return (
@@ -15,7 +15,12 @@ export function Header() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <a href="/" className="flex items-center gap-2">
-            <span className="text-2xl">💰</span>
+            {/* Replacing emoji with SVG icon */}
+            <svg className="w-7 h-7 text-french-blue" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" aria-hidden="true">
+              <rect x="3" y="6" width="18" height="12" rx="4" fill="currentColor" opacity="0.15" />
+              <path d="M12 8v8M8 12h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+            </svg>
             <span className="text-xl font-bold text-jet-black dark:text-white">
               Budget<span className="text-french-blue">Wise</span>
             </span>
@@ -48,7 +53,7 @@ export function Header() {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
-            <ThemeToggle />
+            <ThemeSelector />
             
             {/* Mobile menu button */}
             <button className="md:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">

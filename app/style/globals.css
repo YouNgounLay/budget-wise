@@ -23,8 +23,13 @@
    Dark Mode Theme Variables
    ============================ */
 .dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --background: #0f172a;
+  --foreground: #f1f5f9;
+  --jet-black: #f1f5f9;
+  --yale-blue: #38bdf8;
+  --french-blue: #60a5fa;
+  --fresh-sky: #22d3ee;
+  --strong-cyan: #2dd4bf;
 }
 
 @theme inline {

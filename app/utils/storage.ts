@@ -1,3 +1,4 @@
+import { ACCOUNT_COLORS, ACCOUNT_ICONS } from "../types";
 /**
  * Storage Utility
  * Handles localStorage operations with type safety
@@ -13,6 +14,8 @@ export function getFromStorage<T>(key: string): T | null {
   
   try {
     const item = localStorage.getItem(key);
+    // const power = JSON.parse(item || "[]");
+    // return item ? power : null;
     return item ? JSON.parse(item) : null;
   } catch (error) {
     console.error(`Error reading from localStorage: ${key}`, error);

@@ -6,3 +6,4 @@
 export { AccountProvider, useAccounts } from './AccountContext';
 export { ChainProvider, useChains } from './ChainContext';
 export { ThemeProvider, useTheme } from './ThemeContext';
+export { ThemeCustomizationProvider, useThemeCustomization } from './ThemeCustomizationContext';

@@ -17,6 +17,8 @@ import React, {
 } from 'react';
 import {
   Account,
+  ACCOUNT_COLORS,
+  ACCOUNT_ICONS,
   CreateAccountDTO,
   UpdateAccountDTO,
 } from '@/app/types/account';
@@ -234,6 +236,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 // Custom hook
 export function useAccounts(): AccountContextType {
   const context = useContext(AccountContext);
+
   if (context === undefined) {
     throw new Error('useAccounts must be used within an AccountProvider');
   }

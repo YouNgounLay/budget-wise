@@ -9,6 +9,7 @@ import React from 'react';
 import { AccountProvider } from './context/AccountContext';
 import { ChainProvider } from './context/ChainContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { ThemeCustomizationProvider } from './context/ThemeCustomizationContext';
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -17,9 +18,11 @@ interface ProvidersProps {
 export function Providers({ children }: ProvidersProps) {
   return (
     <ThemeProvider>
-      <AccountProvider>
-        <ChainProvider>{children}</ChainProvider>
-      </AccountProvider>
+      <ThemeCustomizationProvider>
+        <AccountProvider>
+          <ChainProvider>{children}</ChainProvider>
+        </AccountProvider>
+      </ThemeCustomizationProvider>
     </ThemeProvider>
   );
 }

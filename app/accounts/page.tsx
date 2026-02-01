@@ -26,7 +26,6 @@ export default function AccountsPage() {
     depositToAccount,
     withdrawFromAccount,
   } = useAccounts();
-
   // Modal states
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | undefined>();

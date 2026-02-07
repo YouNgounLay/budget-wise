@@ -2,7 +2,7 @@
 
 /**
  * Sidebar Component
- * Side navigation for desktop
+ * Side navigation for desktop and mobile
  */
 
 import React from 'react';
@@ -13,6 +13,11 @@ interface NavItem {
   href: string;
   label: string;
   icon: React.ReactNode;
+}
+
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 const navItems: NavItem[] = [
@@ -60,34 +65,81 @@ const navItems: NavItem[] = [
   },
 ];
 
-export function Sidebar() {
+export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
 
   return (
-    <aside className="sidebar hidden lg:flex flex-col w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 min-h-[calc(100vh-4rem)]">
-      <nav className="flex-1 p-4 space-y-1">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href;
+    <>
+      {/* Mobile overlay */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`
-                flex items-center gap-3 px-4 py-3 rounded-lg transition-colors
-                ${
-                  isActive
-                    ? 'bg-french-blue/10 text-french-blue'
-                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                }
-              `}
+      {/* Sidebar */}
+      <aside
+        className={`
+          sidebar fixed lg:static inset-y-0 left-0 z-50
+          flex flex-col w-64 bg-white dark:bg-slate-900 
+          border-r border-slate-200 dark:border-slate-800 
+          min-h-[calc(100vh-4rem)] lg:min-h-[calc(100vh-4rem)]
+          transform transition-transform duration-300 ease-in-out
+          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+          lg:translate-x-0 lg:flex
+        `}
+      >
+        {/* Mobile header with close button */}
+        <div className="flex items-center justify-between p-4 lg:hidden border-b border-slate-200 dark:border-slate-800">
+          <span className="text-lg font-semibold text-jet-black dark:text-white">Menu</span>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+            aria-label="Close menu"
+          >
+            <svg
+              className="w-5 h-5 text-slate-600 dark:text-slate-300"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              {item.icon}
-              <span className="font-medium">{item.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
-    </aside>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <nav className="flex-1 p-4 space-y-1">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href;
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onClose}
+                className={`
+                  flex items-center gap-3 px-4 py-3 rounded-lg transition-colors
+                  ${
+                    isActive
+                      ? 'bg-french-blue/10 text-french-blue'
+                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }
+                `}
+              >
+                {item.icon}
+                <span className="font-medium">{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      </aside>
+    </>
   );
 }

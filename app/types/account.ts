@@ -97,7 +97,8 @@ export type AccountIcon =
   | 'factory'
   | 'hospital'
   | 'school'
-  | 'library';
+  | 'library'
+  | 'custom';
 
 export type AccountColor =
   | 'jet-black'
@@ -118,6 +119,7 @@ export interface Account {
   description: string;
   amount: number;
   icon: AccountIcon;
+  customEmoji?: string;
   color: AccountColor;
   customColor?: string;
   createdAt: string;
@@ -129,6 +131,7 @@ export interface CreateAccountDTO {
   description: string;
   amount: number;
   icon: AccountIcon;
+  customEmoji?: string;
   color: AccountColor;
   customColor?: string;
 }
@@ -138,6 +141,7 @@ export interface UpdateAccountDTO {
   description?: string;
   amount?: number;
   icon?: AccountIcon;
+  customEmoji?: string;
   color?: AccountColor;
   customColor?: string;
 }
@@ -237,6 +241,7 @@ export const ACCOUNT_ICONS: Record<AccountIcon, string> = {
   hospital: '🏥',
   school: '🏫',
   library: '📖',
+  custom: '✨',
 };
 
 export const ACCOUNT_COLORS: Record<AccountColor, string> = {

@@ -31,6 +31,7 @@ const defaultFormData: CreateAccountDTO = {
   description: '',
   amount: 0,
   icon: 'money',
+  customEmoji: undefined,
   color: 'french-blue',
   customColor: '#4a86e8',
 };
@@ -54,6 +55,7 @@ export function AccountForm({
         description: account.description,
         amount: account.amount,
         icon: account.icon,
+        customEmoji: account.customEmoji,
         color: account.color,
         customColor: account.customColor || '#4a86e8',
       });
@@ -105,7 +107,9 @@ export function AccountForm({
   const modalTitle = title || (account ? 'Edit Account' : 'Create Account');
   
   // Get current icon and color for preview
-  const currentIcon = ACCOUNT_ICONS[formData.icon];
+  const currentIcon = formData.icon === 'custom' && formData.customEmoji 
+    ? formData.customEmoji 
+    : ACCOUNT_ICONS[formData.icon];
   const currentColor = formData.color === 'custom' && formData.customColor 
     ? formData.customColor 
     : ACCOUNT_COLORS[formData.color];
@@ -175,11 +179,18 @@ export function AccountForm({
           </button>
           
           {showAppearance && (
-            <div className="p-4 space-y-4 border-t border-slate-200 dark:border-slate-700 max-h-72 overflow-y-auto">
+            <div className="p-4 space-y-4 border-t border-slate-200 dark:border-slate-700 max-h-80 overflow-y-auto">
               <IconPicker
                 label="Select Icon"
                 value={formData.icon}
-                onChange={(icon: AccountIcon) => handleChange('icon', icon)}
+                customEmoji={formData.customEmoji}
+                onChange={(icon: AccountIcon, customEmoji?: string) => {
+                  setFormData((prev) => ({ 
+                    ...prev, 
+                    icon, 
+                    customEmoji: customEmoji || undefined 
+                  }));
+                }}
               />
 
               <ColorPicker

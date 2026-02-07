@@ -147,7 +147,7 @@ export function ChainDisplay({
                     borderLeft: `3px solid ${ACCOUNT_COLORS[account.color]}`,
                   }}
                 >
-                  <span className="text-xl">{ACCOUNT_ICONS[account.icon]}</span>
+                  <span className="text-xl">{account.icon === 'custom' && account.customEmoji ? account.customEmoji : ACCOUNT_ICONS[account.icon]}</span>
                   <div className="text-sm">
                     <p className="font-medium text-jet-black dark:text-white">
                       {account.name}
@@ -203,7 +203,7 @@ export function ChainDisplay({
                     borderLeft: `3px solid ${ACCOUNT_COLORS[overflowAccount.color]}`,
                   }}
                 >
-                  <span className="text-xl">{ACCOUNT_ICONS[overflowAccount.icon]}</span>
+                  <span className="text-xl">{overflowAccount.icon === 'custom' && overflowAccount.customEmoji ? overflowAccount.customEmoji : ACCOUNT_ICONS[overflowAccount.icon]}</span>
                   <div className="text-sm">
                     <p className="font-medium text-jet-black dark:text-white flex items-center gap-1">
                       {overflowAccount.name}

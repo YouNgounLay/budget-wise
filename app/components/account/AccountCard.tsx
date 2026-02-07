@@ -29,7 +29,10 @@ export function AccountCard({
   onWithdraw,
   compact = false,
 }: AccountCardProps) {
-  const icon = ACCOUNT_ICONS[account.icon];
+  // Use customEmoji if icon is 'custom', otherwise use the preset icon
+  const icon = account.icon === 'custom' && account.customEmoji 
+    ? account.customEmoji 
+    : ACCOUNT_ICONS[account.icon];
   // Use customColor if color is 'custom', otherwise use the preset color
   const color = account.color === 'custom' && account.customColor 
     ? account.customColor 

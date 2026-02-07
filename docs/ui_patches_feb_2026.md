@@ -150,6 +150,75 @@ Updated the toggle button styling:
 
 ---
 
+## Patch #4: Reset to Default Theme Button
+
+### Issue
+Users had no way to reset their theme customizations back to the default settings.
+
+### Solution
+Added a "Reset to Default" button to the theme selector dropdown.
+
+### Files Modified
+
+#### `app/components/shared/ThemeSelector.tsx`
+- Added `resetToDefault` from `useThemeCustomization` hook
+- Added "Reset to Default" button with refresh icon
+- Button closes dropdown after clicking
+
+### Implementation
+The reset button appears below the "Create New Theme" button and uses the existing `resetToDefault` function from the ThemeCustomizationContext.
+
+---
+
+## Patch #5: Improved Icon Picker with Custom Emoji Support
+
+### Issue
+1. The icon picker showed a scrollable list of 90+ icons, many of which were duplicates (e.g., 🔥 for both "gas" and "fire")
+2. Users had no way to input their own custom emoji
+
+### Solution
+1. Created a curated list of 24 popular, non-duplicate icons
+2. Removed scrollable container and show all icons in a grid
+3. Added "Custom Emoji" button that opens an input field for user's own emoji
+4. Added `customEmoji` field to Account type for storing custom icons
+
+### Files Modified
+
+#### `app/components/account/IconPicker.tsx`
+- Redesigned with curated `POPULAR_ICONS` list (24 items)
+- 8-column grid layout with no scrolling
+- Added custom emoji input section with Add/Cancel buttons
+- Keyboard support (Enter to submit)
+
+#### `app/types/account.ts`
+- Added `'custom'` to `AccountIcon` type
+- Added `customEmoji?: string` to Account, CreateAccountDTO, UpdateAccountDTO
+- Added `custom: '✨'` to ACCOUNT_ICONS fallback
+
+#### `app/components/account/AccountForm.tsx`
+- Updated defaultFormData to include `customEmoji: undefined`
+- Updated useEffect to populate customEmoji from account
+- Updated currentIcon display to show customEmoji when icon is 'custom'
+- Updated IconPicker onChange to handle customEmoji parameter
+
+#### `app/components/account/AccountCard.tsx`
+- Updated icon display to show customEmoji when icon is 'custom'
+
+#### Chain Components
+- `ChainDisplay.tsx` - Updated to show customEmoji
+- `ChainDepositModal.tsx` - Updated to show customEmoji
+- `ManageChainAccountsModal.tsx` - Updated account displays and dropdowns
+
+### Popular Icons List (24 curated icons)
+```
+money, bank, wallet, credit-card, piggy-bank, savings,
+investment, car, home, grocery, food, coffee,
+shopping, entertainment, travel, health, fitness, education,
+business, technology, gifts, heart, star, target
+```
+
+---
+
 ## Testing Checklist
 
 ### Patch #1
@@ -170,3 +239,17 @@ Updated the toggle button styling:
 - [x] Toggle circle smoothly transitions between positions
 - [x] Toggle circle color changes with theme
 - [x] Sun and Moon icons transition smoothly
+
+### Patch #4
+- [ ] Reset to Default button appears in theme dropdown
+- [ ] Clicking Reset to Default resets all theme customizations
+- [ ] Dropdown closes after clicking Reset
+
+### Patch #5
+- [ ] Icon picker shows 24 curated icons in 8-column grid
+- [ ] No scrolling needed in icon picker
+- [ ] Custom Emoji button shows input field
+- [ ] Can type/paste custom emoji
+- [ ] Custom emoji saved to account correctly
+- [ ] Custom emoji displays in all account views
+- [ ] Custom emoji displays in chain components

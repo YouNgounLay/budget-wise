@@ -87,3 +87,20 @@ export function safeParseNumber(value: string | number): number {
   const parsed = typeof value === 'number' ? value : parseFloat(value);
   return isNaN(parsed) ? 0 : parsed;
 }
+
+/**
+ * Gets the display icon for an account
+ * Returns customEmoji if icon is 'custom', otherwise returns the preset icon
+ */
+export function getAccountIcon(
+  icon: string,
+  customEmoji?: string,
+  iconMap?: Record<string, string>
+): string {
+  // Import is done at runtime to avoid circular dependencies
+  if (icon === 'custom' && customEmoji) {
+    return customEmoji;
+  }
+  // Default icon map if not provided
+  return iconMap?.[icon] || '📦';
+}

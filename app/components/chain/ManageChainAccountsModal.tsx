@@ -137,7 +137,7 @@ export function ManageChainAccountsModal({
                 <Select
                   options={availableAccounts.map((a) => ({
                     value: a.id,
-                    label: `${ACCOUNT_ICONS[a.icon]} ${a.name}`,
+                    label: `${a.icon === 'custom' && a.customEmoji ? a.customEmoji : ACCOUNT_ICONS[a.icon]} ${a.name}`,
                   }))}
                   value={selectedAccountId}
                   onChange={(e) => setSelectedAccountId(e.target.value)}
@@ -225,7 +225,7 @@ export function ManageChainAccountsModal({
                   </div>
 
                   {/* Account info */}
-                  <span className="text-xl">{ACCOUNT_ICONS[account.icon]}</span>
+                  <span className="text-xl">{account.icon === 'custom' && account.customEmoji ? account.customEmoji : ACCOUNT_ICONS[account.icon]}</span>
                   <div className="flex-1">
                     <p className="font-medium text-jet-black dark:text-white">
                       {account.name}
@@ -312,7 +312,7 @@ export function ManageChainAccountsModal({
           {overflowAccount ? (
             <div className="flex items-center justify-between p-3 bg-surface rounded-lg border border-emerald-200 dark:border-emerald-700">
               <div className="flex items-center gap-3">
-                <span className="text-xl">{ACCOUNT_ICONS[overflowAccount.icon]}</span>
+                <span className="text-xl">{overflowAccount.icon === 'custom' && overflowAccount.customEmoji ? overflowAccount.customEmoji : ACCOUNT_ICONS[overflowAccount.icon]}</span>
                 <div>
                   <p className="font-medium text-foreground">
                     {overflowAccount.name}
@@ -334,7 +334,7 @@ export function ManageChainAccountsModal({
               <Select
                 options={availableForOverflow.map((a) => ({
                   value: a.id,
-                  label: `${ACCOUNT_ICONS[a.icon]} ${a.name}`,
+                  label: `${a.icon === 'custom' && a.customEmoji ? a.customEmoji : ACCOUNT_ICONS[a.icon]} ${a.name}`,
                 }))}
                 value=""
                 onChange={(e) => {

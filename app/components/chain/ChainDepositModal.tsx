@@ -101,7 +101,7 @@ export function ChainDepositModal({
                       className="flex items-center gap-2 text-sm"
                     >
                       <span className="text-slate-400">{index + 1}.</span>
-                      <span>{ACCOUNT_ICONS[account.icon]}</span>
+                      <span>{account.icon === 'custom' && account.customEmoji ? account.customEmoji : ACCOUNT_ICONS[account.icon]}</span>
                       <span className="text-jet-black dark:text-white">
                         {account.name}
                       </span>

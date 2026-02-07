@@ -1,8 +1,14 @@
 # Budget-wise - Your account based budget planner application
 
-## Feature 
+## Feature  
 
-The application should allows the user to toggle between light and dark mode. There should be a toggle button with custom ICON that clearly depicts which theme the system is now using, the system them changes the color of the page. 
+I want to implement a data import/export option. The "export" button should allow the user export their current data in a form of excel spreadsheet, as the majority of the users are non-technical. But there is also an option to opt for JSON format too. The import function should allow the user to import data into the system, based on the structured defined in the export function.
+
+## Patching 
+1. Please change the dollar bag emoji and chain emoji icon to custom icon of similar look
+2. The color changing function only works for "primary and text" but not for other options, please fix that.
+3. When you toggle the theme from light to dark mode, the user can still see a bit of white pixel behind the "circle".
+
 
 ---
-**Please follows all the rules in "rulesets" folder"** 
+**Please follows all the rules in "rulesets" folder"**  

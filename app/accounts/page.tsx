@@ -105,18 +105,18 @@ export default function AccountsPage() {
         </div>
 
         {/* Stats summary */}
-        <div className="flex items-center gap-6 p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+        <div className="flex items-center gap-6 p-4 bg-surface rounded-xl border border-border">
           <div>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-sm text-muted">
               Total Accounts
             </p>
-            <p className="text-2xl font-bold text-jet-black dark:text-white">
+            <p className="text-2xl font-bold text-foreground">
               {accountState.accounts.length}
             </p>
           </div>
-          <div className="w-px h-12 bg-slate-200 dark:bg-slate-700" />
+          <div className="w-px h-12 bg-border" />
           <div>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-sm text-muted">
               Combined Balance
             </p>
             <p className="text-2xl font-bold text-french-blue">

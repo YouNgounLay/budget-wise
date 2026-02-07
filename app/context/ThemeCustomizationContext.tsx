@@ -120,17 +120,57 @@ export function ThemeCustomizationProvider({ children }: ThemeCustomizationProvi
     return profiles.find(p => p.id === activeProfileId) || profiles[0];
   }, [profiles, activeProfileId]);
 
+  /**
+   * Derives surface color (for cards, modals, etc.) from background color
+   * In light mode: slightly lighter/white
+   * In dark mode: slightly lighter than background
+   */
+  const deriveSurfaceColor = useCallback((backgroundColor: string, isDark: boolean): string => {
+    // For light mode, use white or very light version
+    if (!isDark) {
+      // Parse the background color and return a lighter version or white
+      return '#ffffff';
+    }
+    // For dark mode, lighten the background slightly
+    // Parse hex color and add some brightness
+    const hex = backgroundColor.replace('#', '');
+    const r = Math.min(255, parseInt(hex.substring(0, 2), 16) + 15);
+    const g = Math.min(255, parseInt(hex.substring(2, 4), 16) + 15);
+    const b = Math.min(255, parseInt(hex.substring(4, 6), 16) + 15);
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+  }, []);
+
+  /**
+   * Derives border color from muted color with transparency
+   */
+  const deriveBorderColor = useCallback((mutedColor: string, isDark: boolean): string => {
+    if (!isDark) {
+      return '#e2e8f0'; // slate-200
+    }
+    return '#334155'; // slate-700
+  }, []);
+
   // Apply CSS variables
-  const applyThemeColors = useCallback((colors: ThemeColors) => {
+  const applyThemeColors = useCallback((colors: ThemeColors, isDark: boolean = false) => {
     const root = document.documentElement;
+    // Background and foreground
     root.style.setProperty('--background', colors.background);
     root.style.setProperty('--foreground', colors.foreground);
-    root.style.setProperty('--french-blue', colors.primary);
-    root.style.setProperty('--yale-blue', colors.secondary);
-    root.style.setProperty('--fresh-sky', colors.accent);
     root.style.setProperty('--jet-black', colors.foreground);
+    // Surface color for UI elements (cards, modals, header)
+    root.style.setProperty('--surface', deriveSurfaceColor(colors.background, isDark));
+    // Border color
+    root.style.setProperty('--border', deriveBorderColor(colors.muted, isDark));
+    // Primary color (used as french-blue)
+    root.style.setProperty('--french-blue', colors.primary);
+    // Secondary color (used as yale-blue)
+    root.style.setProperty('--yale-blue', colors.secondary);
+    // Accent color (used as fresh-sky and strong-cyan)
+    root.style.setProperty('--fresh-sky', colors.accent);
     root.style.setProperty('--strong-cyan', colors.accent);
-  }, []);
+    // Muted color - store in a CSS variable for components that may use it
+    root.style.setProperty('--muted', colors.muted);
+  }, [deriveSurfaceColor, deriveBorderColor]);
 
   // Apply theme when active profile or mode changes
   useEffect(() => {
@@ -138,7 +178,7 @@ export function ThemeCustomizationProvider({ children }: ThemeCustomizationProvi
 
     const isDark = document.documentElement.classList.contains('dark');
     const colors = isDark ? activeProfile.darkColors : activeProfile.lightColors;
-    applyThemeColors(colors);
+    applyThemeColors(colors, isDark);
 
     // Watch for theme changes
     const observer = new MutationObserver((mutations) => {
@@ -146,7 +186,7 @@ export function ThemeCustomizationProvider({ children }: ThemeCustomizationProvi
         if (mutation.attributeName === 'class') {
           const isDarkNow = document.documentElement.classList.contains('dark');
           const newColors = isDarkNow ? activeProfile.darkColors : activeProfile.lightColors;
-          applyThemeColors(newColors);
+          applyThemeColors(newColors, isDarkNow);
         }
       });
     });
@@ -207,7 +247,7 @@ export function ThemeCustomizationProvider({ children }: ThemeCustomizationProvi
     const defaultProfile = profiles.find(p => p.id === 'default');
     if (defaultProfile) {
       const isDark = document.documentElement.classList.contains('dark');
-      applyThemeColors(isDark ? defaultProfile.darkColors : defaultProfile.lightColors);
+      applyThemeColors(isDark ? defaultProfile.darkColors : defaultProfile.lightColors, isDark);
     }
   }, [profiles, applyThemeColors]);
 

@@ -11,3 +11,4 @@ export { Select } from './Select';
 export { ThemeToggle } from './ThemeToggle';
 export { ThemeSelector } from './ThemeSelector';
 export { ThemeCustomizer } from './ThemeCustomizer';
+export { DataImportExportModal } from './DataImportExportModal';

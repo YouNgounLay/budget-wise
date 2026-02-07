@@ -40,8 +40,8 @@ export function AccountCard({
       <div
         className={`
           flex items-center gap-3 p-3 rounded-lg cursor-pointer
-          bg-white dark:bg-slate-800
-          border border-slate-200 dark:border-slate-700
+          bg-surface
+          border border-border
           hover:shadow-md transition-shadow duration-200
         `}
         onClick={onClick}
@@ -49,10 +49,10 @@ export function AccountCard({
       >
         <span className="text-2xl">{icon}</span>
         <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-jet-black dark:text-white truncate">
+          <h4 className="font-medium text-foreground truncate">
             {account.name}
           </h4>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-sm text-muted">
             {formatCurrency(account.amount)}
           </p>
         </div>

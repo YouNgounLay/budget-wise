@@ -174,7 +174,7 @@ export function ManageChainAccountsModal({
               {chainAccountsWithData.map((account, index) => (
                 <div
                   key={account.id}
-                  className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
+                  className="flex items-center gap-3 p-3 bg-surface border border-border rounded-lg"
                   style={{
                     borderLeftColor: ACCOUNT_COLORS[account.color],
                     borderLeftWidth: '4px',
@@ -310,11 +310,11 @@ export function ManageChainAccountsModal({
           </p>
           
           {overflowAccount ? (
-            <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg border border-emerald-200 dark:border-emerald-700">
+            <div className="flex items-center justify-between p-3 bg-surface rounded-lg border border-emerald-200 dark:border-emerald-700">
               <div className="flex items-center gap-3">
                 <span className="text-xl">{ACCOUNT_ICONS[overflowAccount.icon]}</span>
                 <div>
-                  <p className="font-medium text-jet-black dark:text-white">
+                  <p className="font-medium text-foreground">
                     {overflowAccount.name}
                   </p>
                   <p className="text-sm text-emerald-600 dark:text-emerald-400">

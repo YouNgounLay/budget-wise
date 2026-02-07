@@ -39,9 +39,9 @@ export function Card({ children, className = '', padding = 'md' }: CardProps) {
   return (
     <div
       className={`
-        bg-white dark:bg-slate-800 
+        bg-surface
         rounded-xl shadow-md 
-        border border-slate-200 dark:border-slate-700
+        border border-border
         ${paddingStyles[padding]}
         ${className}
       `}
@@ -56,7 +56,7 @@ export function CardHeader({ children, className = '' }: CardHeaderProps) {
     <div
       className={`
         pb-3 mb-3 
-        border-b border-slate-200 dark:border-slate-700
+        border-b border-border
         ${className}
       `}
     >
@@ -74,7 +74,7 @@ export function CardFooter({ children, className = '' }: CardFooterProps) {
     <div
       className={`
         pt-3 mt-3 
-        border-t border-slate-200 dark:border-slate-700
+        border-t border-border
         ${className}
       `}
     >

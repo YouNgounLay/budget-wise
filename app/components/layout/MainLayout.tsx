@@ -25,7 +25,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   };
 
   return (
-    <div className="main-layout min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="main-layout min-h-screen bg-background">
       <Header isMobileMenuOpen={isMobileMenuOpen} onToggleMobileMenu={toggleMobileMenu} />
       <div className="flex">
         <Sidebar isOpen={isMobileMenuOpen} onClose={closeMobileMenu} />

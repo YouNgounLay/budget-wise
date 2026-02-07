@@ -47,12 +47,12 @@ export function ChainDisplay({
 
   if (compact) {
     return (
-      <div className="flex items-center gap-2 p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+      <div className="flex items-center gap-2 p-3 rounded-lg bg-surface border border-border">
         <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-jet-black dark:text-white truncate">
+          <h4 className="font-medium text-foreground truncate">
             {chain.name}
           </h4>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted">
             {chain.accounts.length} account(s)
           </p>
         </div>

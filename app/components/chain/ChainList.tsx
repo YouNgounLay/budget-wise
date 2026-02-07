@@ -32,7 +32,11 @@ export function ChainList({
   if (chains.length === 0) {
     return (
       <div className="text-center py-12">
-        <div className="text-5xl mb-4">🔗</div>
+        <div className="mb-4 flex justify-center">
+          <svg className="w-16 h-16 text-french-blue" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+          </svg>
+        </div>
         <p className="text-slate-500 dark:text-slate-400">{emptyMessage}</p>
       </div>
     );

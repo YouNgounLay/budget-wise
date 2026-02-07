@@ -1,0 +1,285 @@
+/**
+ * Import Service
+ * Handles data import from Excel and JSON formats
+ */
+
+import * as XLSX from 'xlsx';
+import { Account, AccountIcon, AccountColor } from '@/app/types/account';
+import { Chain, ChainAccountConfig } from '@/app/types/chain';
+import { setToStorage, STORAGE_KEYS } from '@/app/utils/storage';
+import { ExportData } from './exportService';
+
+export interface ImportResult {
+  success: boolean;
+  message: string;
+  accountsImported: number;
+  chainsImported: number;
+  errors: string[];
+}
+
+interface ValidationResult {
+  isValid: boolean;
+  errors: string[];
+}
+
+/**
+ * Validates account data structure
+ */
+function validateAccount(account: unknown, index: number): ValidationResult {
+  const errors: string[] = [];
+  const acc = account as Record<string, unknown>;
+
+  if (!acc.id || typeof acc.id !== 'string') {
+    errors.push(`Account ${index + 1}: Missing or invalid ID`);
+  }
+  if (!acc.name || typeof acc.name !== 'string') {
+    errors.push(`Account ${index + 1}: Missing or invalid name`);
+  }
+  if (typeof acc.amount !== 'number') {
+    errors.push(`Account ${index + 1}: Missing or invalid amount`);
+  }
+  if (!acc.icon || typeof acc.icon !== 'string') {
+    errors.push(`Account ${index + 1}: Missing or invalid icon`);
+  }
+  if (!acc.color || typeof acc.color !== 'string') {
+    errors.push(`Account ${index + 1}: Missing or invalid color`);
+  }
+
+  return { isValid: errors.length === 0, errors };
+}
+
+/**
+ * Validates chain data structure
+ */
+function validateChain(chain: unknown, index: number): ValidationResult {
+  const errors: string[] = [];
+  const ch = chain as Record<string, unknown>;
+
+  if (!ch.id || typeof ch.id !== 'string') {
+    errors.push(`Chain ${index + 1}: Missing or invalid ID`);
+  }
+  if (!ch.name || typeof ch.name !== 'string') {
+    errors.push(`Chain ${index + 1}: Missing or invalid name`);
+  }
+  if (!Array.isArray(ch.accounts)) {
+    errors.push(`Chain ${index + 1}: Missing or invalid accounts array`);
+  }
+
+  return { isValid: errors.length === 0, errors };
+}
+
+/**
+ * Validates the entire export data structure
+ */
+function validateExportData(data: unknown): ValidationResult {
+  const errors: string[] = [];
+  const exportData = data as ExportData;
+
+  if (!exportData.metadata) {
+    errors.push('Missing metadata section');
+  }
+  if (!Array.isArray(exportData.accounts)) {
+    errors.push('Missing or invalid accounts array');
+  } else {
+    exportData.accounts.forEach((account, index) => {
+      const result = validateAccount(account, index);
+      errors.push(...result.errors);
+    });
+  }
+  if (!Array.isArray(exportData.chains)) {
+    errors.push('Missing or invalid chains array');
+  } else {
+    exportData.chains.forEach((chain, index) => {
+      const result = validateChain(chain, index);
+      errors.push(...result.errors);
+    });
+  }
+
+  return { isValid: errors.length === 0, errors };
+}
+
+/**
+ * Imports data from a JSON file
+ */
+export async function importFromJSON(file: File): Promise<ImportResult> {
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text) as ExportData;
+
+    const validation = validateExportData(data);
+    if (!validation.isValid) {
+      return {
+        success: false,
+        message: 'Validation failed',
+        accountsImported: 0,
+        chainsImported: 0,
+        errors: validation.errors,
+      };
+    }
+
+    // Save to storage
+    setToStorage(STORAGE_KEYS.ACCOUNTS, data.accounts);
+    setToStorage(STORAGE_KEYS.CHAINS, data.chains);
+
+    return {
+      success: true,
+      message: 'Import successful',
+      accountsImported: data.accounts.length,
+      chainsImported: data.chains.length,
+      errors: [],
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Failed to parse JSON file',
+      accountsImported: 0,
+      chainsImported: 0,
+      errors: [error instanceof Error ? error.message : 'Unknown error'],
+    };
+  }
+}
+
+/**
+ * Imports data from an Excel file
+ */
+export async function importFromExcel(file: File): Promise<ImportResult> {
+  try {
+    const buffer = await file.arrayBuffer();
+    const workbook = XLSX.read(buffer, { type: 'array' });
+
+    const errors: string[] = [];
+
+    // Check required sheets exist
+    if (!workbook.SheetNames.includes('Accounts')) {
+      errors.push('Missing "Accounts" sheet');
+    }
+    if (!workbook.SheetNames.includes('Chains')) {
+      errors.push('Missing "Chains" sheet');
+    }
+
+    if (errors.length > 0) {
+      return {
+        success: false,
+        message: 'Invalid Excel structure',
+        accountsImported: 0,
+        chainsImported: 0,
+        errors,
+      };
+    }
+
+    // Parse Accounts sheet
+    const accountsSheet = workbook.Sheets['Accounts'];
+    const accountsRaw = XLSX.utils.sheet_to_json<Record<string, unknown>>(accountsSheet);
+    
+    const accounts: Account[] = accountsRaw.map((row) => ({
+      id: String(row['ID'] || ''),
+      name: String(row['Name'] || ''),
+      description: String(row['Description'] || ''),
+      amount: Number(row['Amount']) || 0,
+      icon: String(row['Icon'] || 'money') as AccountIcon,
+      color: String(row['Color'] || 'french-blue') as AccountColor,
+      customColor: row['Custom Color'] ? String(row['Custom Color']) : undefined,
+      createdAt: String(row['Created At'] || new Date().toISOString()),
+      updatedAt: String(row['Updated At'] || new Date().toISOString()),
+    }));
+
+    // Parse Chains sheet
+    const chainsSheet = workbook.Sheets['Chains'];
+    const chainsRaw = XLSX.utils.sheet_to_json<Record<string, unknown>>(chainsSheet);
+
+    // Parse Chain Accounts sheet if exists
+    let chainAccountsMap: Map<string, ChainAccountConfig[]> = new Map();
+    if (workbook.SheetNames.includes('Chain Accounts')) {
+      const chainAccountsSheet = workbook.Sheets['Chain Accounts'];
+      const chainAccountsRaw = XLSX.utils.sheet_to_json<Record<string, unknown>>(chainAccountsSheet);
+      
+      chainAccountsRaw.forEach((row) => {
+        const chainId = String(row['Chain ID'] || '');
+        const config: ChainAccountConfig = {
+          accountId: String(row['Account ID'] || ''),
+          limit: Number(row['Limit']) || 0,
+        };
+        
+        if (!chainAccountsMap.has(chainId)) {
+          chainAccountsMap.set(chainId, []);
+        }
+        chainAccountsMap.get(chainId)?.push(config);
+      });
+    }
+
+    const chains: Chain[] = chainsRaw.map((row) => {
+      const chainId = String(row['ID'] || '');
+      return {
+        id: chainId,
+        name: String(row['Name'] || ''),
+        description: String(row['Description'] || ''),
+        defaultLimit: Number(row['Default Limit']) || 2000,
+        overflowAccountId: row['Overflow Account ID'] ? String(row['Overflow Account ID']) : null,
+        accounts: chainAccountsMap.get(chainId) || [],
+        createdAt: String(row['Created At'] || new Date().toISOString()),
+        updatedAt: String(row['Updated At'] || new Date().toISOString()),
+      };
+    });
+
+    // Validate imported data
+    accounts.forEach((account, index) => {
+      const result = validateAccount(account, index);
+      errors.push(...result.errors);
+    });
+    chains.forEach((chain, index) => {
+      const result = validateChain(chain, index);
+      errors.push(...result.errors);
+    });
+
+    if (errors.length > 0) {
+      return {
+        success: false,
+        message: 'Validation failed',
+        accountsImported: 0,
+        chainsImported: 0,
+        errors,
+      };
+    }
+
+    // Save to storage
+    setToStorage(STORAGE_KEYS.ACCOUNTS, accounts);
+    setToStorage(STORAGE_KEYS.CHAINS, chains);
+
+    return {
+      success: true,
+      message: 'Import successful',
+      accountsImported: accounts.length,
+      chainsImported: chains.length,
+      errors: [],
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Failed to parse Excel file',
+      accountsImported: 0,
+      chainsImported: 0,
+      errors: [error instanceof Error ? error.message : 'Unknown error'],
+    };
+  }
+}
+
+/**
+ * Detects file type and imports accordingly
+ */
+export async function importFromFile(file: File): Promise<ImportResult> {
+  const extension = file.name.split('.').pop()?.toLowerCase();
+  
+  if (extension === 'json') {
+    return importFromJSON(file);
+  } else if (extension === 'xlsx' || extension === 'xls') {
+    return importFromExcel(file);
+  } else {
+    return {
+      success: false,
+      message: 'Unsupported file type',
+      accountsImported: 0,
+      chainsImported: 0,
+      errors: ['Please upload a .json or .xlsx file'],
+    };
+  }
+}

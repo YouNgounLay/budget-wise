@@ -83,8 +83,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       <aside
         className={`
           sidebar fixed lg:static inset-y-0 left-0 z-50
-          flex flex-col w-64 bg-white dark:bg-slate-900 
-          border-r border-slate-200 dark:border-slate-800 
+          flex flex-col w-64 bg-surface
+          border-r border-border
           min-h-[calc(100vh-4rem)] lg:min-h-[calc(100vh-4rem)]
           transform transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
@@ -92,8 +92,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         `}
       >
         {/* Mobile header with close button */}
-        <div className="flex items-center justify-between p-4 lg:hidden border-b border-slate-200 dark:border-slate-800">
-          <span className="text-lg font-semibold text-jet-black dark:text-white">Menu</span>
+        <div className="flex items-center justify-between p-4 lg:hidden border-b border-border">
+          <span className="text-lg font-semibold text-foreground">Menu</span>
           <button
             onClick={onClose}
             className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"

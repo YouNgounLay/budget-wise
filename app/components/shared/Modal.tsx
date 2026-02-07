@@ -66,9 +66,9 @@ export function Modal({
       <div
         className={`
           modal-content relative w-full ${sizeStyles[size]}
-          bg-white dark:bg-slate-800
+          bg-surface
           rounded-xl shadow-xl
-          border border-slate-200 dark:border-slate-700
+          border border-border
           animate-modal-enter
         `}
         role="dialog"
@@ -77,10 +77,10 @@ export function Modal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
+        <div className="flex items-center justify-between p-4 border-b border-border">
           <h2
             id="modal-title"
-            className="text-lg font-semibold text-jet-black dark:text-white"
+            className="text-lg font-semibold text-foreground"
           >
             {title}
           </h2>

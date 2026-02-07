@@ -104,11 +104,11 @@ export function ThemeSelector() {
 
         {/* Dropdown menu */}
         {isOpen && (
-          <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 z-50 overflow-hidden">
+          <div className="absolute right-0 mt-2 w-64 bg-surface rounded-lg shadow-lg border border-border z-50 overflow-hidden">
             {/* Light/Dark mode toggle */}
-            <div className="p-3 border-b border-slate-200 dark:border-slate-700">
+            <div className="p-3 border-b border-border">
               <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-sm font-medium text-jet-black dark:text-white">
+                <span className="flex items-center gap-2 text-sm font-medium text-foreground">
                   {theme === 'dark' ? (
                     <>
                       <MoonIcon className="w-4 h-4" />
@@ -123,20 +123,18 @@ export function ThemeSelector() {
                 </span>
                 <button
                   onClick={() => toggleTheme()}
-                  className="relative w-14 h-8 rounded-full border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-700 transition-colors flex items-center overflow-hidden"
+                  className="relative w-14 h-8 rounded-full border border-slate-300 dark:border-slate-600 bg-slate-200 dark:bg-slate-600 transition-all duration-300 flex items-center"
                   style={{ minWidth: 56, minHeight: 32 }}
                   aria-label="Toggle dark/light mode"
                 >
                   <span className="absolute left-1.5 top-1/2 -translate-y-1/2 z-10">
-                    <SunIcon className={`w-5 h-5 transition-opacity ${theme === 'dark' ? 'opacity-40' : 'opacity-100'}`} />
+                    <SunIcon className={`w-5 h-5 transition-opacity duration-300 ${theme === 'dark' ? 'opacity-40' : 'opacity-100'}`} />
                   </span>
                   <span className="absolute right-1.5 top-1/2 -translate-y-1/2 z-10">
-                    {theme === 'dark' && (
-                      <MoonIcon className="w-5 h-5 transition-opacity opacity-100" />
-                    )}
+                    <MoonIcon className={`w-5 h-5 transition-opacity duration-300 ${theme === 'dark' ? 'opacity-100' : 'opacity-40'}`} />
                   </span>
                   <span
-                    className={`absolute top-1.5 left-1.5 transition-transform w-5 h-5 rounded-full bg-white shadow border border-slate-300 dark:border-slate-600 z-20` + (theme === 'dark' ? ' translate-x-6' : ' translate-x-0')}
+                    className={`absolute top-1 left-1 transition-all duration-300 ease-in-out w-6 h-6 rounded-full shadow-md z-20 ${theme === 'dark' ? 'translate-x-6 bg-slate-800' : 'translate-x-0 bg-white'}`}
                   />
                 </button>
               </div>

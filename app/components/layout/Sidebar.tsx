@@ -110,11 +110,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Sidebar */}
       <aside
         className={`
-          sidebar fixed lg:static inset-y-0 left-0 z-50
+          sidebar lg:sticky lg:top-16 inset-y-0 left-0
           flex flex-col w-64 bg-surface
           border-r border-border
-          min-h-[calc(100vh-4rem)] lg:min-h-[calc(100vh-4rem)]
+          h-[calc(100vh-4rem)] overflow-y-auto
           transform transition-transform duration-300 ease-in-out
+          fixed lg:relative z-50 lg:z-auto
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
           lg:translate-x-0 lg:flex
         `}

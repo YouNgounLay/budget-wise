@@ -7,6 +7,7 @@ import * as XLSX from 'xlsx';
 import { Account, AccountIcon, AccountColor } from '@/app/types/account';
 import { Chain, ChainAccountConfig } from '@/app/types/chain';
 import { Tag } from '@/app/types/tag';
+import { AccountRule, AllocationTarget, RuleFrequency, DayOfWeek } from '@/app/types/rule';
 import { setToStorage, STORAGE_KEYS } from '@/app/utils/storage';
 import { ExportData } from './exportService';
 
@@ -16,6 +17,7 @@ export interface ImportResult {
   accountsImported: number;
   chainsImported: number;
   tagsImported: number;
+  rulesImported: number;
   errors: string[];
 }
 
@@ -91,6 +93,32 @@ function validateTag(tag: unknown, index: number): ValidationResult {
 }
 
 /**
+ * Validates rule data structure
+ */
+function validateRule(rule: unknown, index: number): ValidationResult {
+  const errors: string[] = [];
+  const r = rule as Record<string, unknown>;
+
+  if (!r.id || typeof r.id !== 'string') {
+    errors.push(`Rule ${index + 1}: Missing or invalid ID`);
+  }
+  if (!r.sourceAccountId || typeof r.sourceAccountId !== 'string') {
+    errors.push(`Rule ${index + 1}: Missing or invalid source account ID`);
+  }
+  if (typeof r.dayOfWeek !== 'number' || r.dayOfWeek < 0 || r.dayOfWeek > 6) {
+    errors.push(`Rule ${index + 1}: Missing or invalid day of week`);
+  }
+  if (typeof r.thresholdAmount !== 'number') {
+    errors.push(`Rule ${index + 1}: Missing or invalid threshold amount`);
+  }
+  if (!Array.isArray(r.targets)) {
+    errors.push(`Rule ${index + 1}: Missing or invalid targets array`);
+  }
+
+  return { isValid: errors.length === 0, errors };
+}
+
+/**
  * Validates the entire export data structure
  */
 function validateExportData(data: unknown): ValidationResult {
@@ -124,6 +152,14 @@ function validateExportData(data: unknown): ValidationResult {
     });
   }
 
+  // Rules are optional for backward compatibility
+  if (exportData.rules && Array.isArray(exportData.rules)) {
+    exportData.rules.forEach((rule, index) => {
+      const result = validateRule(rule, index);
+      errors.push(...result.errors);
+    });
+  }
+
   return { isValid: errors.length === 0, errors };
 }
 
@@ -143,6 +179,7 @@ export async function importFromJSON(file: File): Promise<ImportResult> {
         accountsImported: 0,
         chainsImported: 0,
         tagsImported: 0,
+        rulesImported: 0,
         errors: validation.errors,
       };
     }
@@ -165,6 +202,14 @@ export async function importFromJSON(file: File): Promise<ImportResult> {
     if (data.tags) {
       setToStorage(STORAGE_KEYS.TAGS, data.tags);
     }
+    if (data.rules) {
+      // Ensure rules have frequency field (backward compatibility)
+      const rulesWithFrequency = data.rules.map((rule) => ({
+        ...rule,
+        frequency: rule.frequency || 'weekly',
+      }));
+      setToStorage(STORAGE_KEYS.RULES, rulesWithFrequency);
+    }
 
     return {
       success: true,
@@ -172,6 +217,7 @@ export async function importFromJSON(file: File): Promise<ImportResult> {
       accountsImported: data.accounts.length,
       chainsImported: data.chains.length,
       tagsImported: data.tags?.length || 0,
+      rulesImported: data.rules?.length || 0,
       errors: [],
     };
   } catch (error) {
@@ -181,6 +227,7 @@ export async function importFromJSON(file: File): Promise<ImportResult> {
       accountsImported: 0,
       chainsImported: 0,
       tagsImported: 0,
+      rulesImported: 0,
       errors: [error instanceof Error ? error.message : 'Unknown error'],
     };
   }
@@ -211,6 +258,7 @@ export async function importFromExcel(file: File): Promise<ImportResult> {
         accountsImported: 0,
         chainsImported: 0,
         tagsImported: 0,
+        rulesImported: 0,
         errors,
       };
     }
@@ -293,6 +341,49 @@ export async function importFromExcel(file: File): Promise<ImportResult> {
       }));
     }
 
+    // Parse Rules sheet if exists
+    let rules: AccountRule[] = [];
+    let ruleTargetsMap: Map<string, AllocationTarget[]> = new Map();
+    
+    if (workbook.SheetNames.includes('Rule Targets')) {
+      const ruleTargetsSheet = workbook.Sheets['Rule Targets'];
+      const ruleTargetsRaw = XLSX.utils.sheet_to_json<Record<string, unknown>>(ruleTargetsSheet);
+      
+      ruleTargetsRaw.forEach((row) => {
+        const ruleId = String(row['Rule ID'] || '');
+        const target: AllocationTarget = {
+          accountId: String(row['Target Account ID'] || ''),
+          percentage: Number(row['Percentage']) || 0,
+        };
+        
+        if (!ruleTargetsMap.has(ruleId)) {
+          ruleTargetsMap.set(ruleId, []);
+        }
+        ruleTargetsMap.get(ruleId)?.push(target);
+      });
+    }
+    
+    if (workbook.SheetNames.includes('Rules')) {
+      const rulesSheet = workbook.Sheets['Rules'];
+      const rulesRaw = XLSX.utils.sheet_to_json<Record<string, unknown>>(rulesSheet);
+      
+      rules = rulesRaw.map((row) => {
+        const ruleId = String(row['ID'] || '');
+        return {
+          id: ruleId,
+          sourceAccountId: String(row['Source Account ID'] || ''),
+          dayOfWeek: (Number(row['Day of Week']) || 0) as DayOfWeek,
+          frequency: (String(row['Frequency'] || 'weekly')) as RuleFrequency,
+          thresholdAmount: Number(row['Threshold Amount']) || 0,
+          targets: ruleTargetsMap.get(ruleId) || [],
+          isActive: row['Is Active'] === 'true' || row['Is Active'] === true,
+          lastExecuted: row['Last Executed'] ? String(row['Last Executed']) : null,
+          createdAt: String(row['Created At'] || new Date().toISOString()),
+          updatedAt: String(row['Updated At'] || new Date().toISOString()),
+        };
+      });
+    }
+
     // Validate imported data
     accounts.forEach((account, index) => {
       const result = validateAccount(account, index);
@@ -306,6 +397,10 @@ export async function importFromExcel(file: File): Promise<ImportResult> {
       const result = validateTag(tag, index);
       errors.push(...result.errors);
     });
+    rules.forEach((rule, index) => {
+      const result = validateRule(rule, index);
+      errors.push(...result.errors);
+    });
 
     if (errors.length > 0) {
       return {
@@ -314,6 +409,7 @@ export async function importFromExcel(file: File): Promise<ImportResult> {
         accountsImported: 0,
         chainsImported: 0,
         tagsImported: 0,
+        rulesImported: 0,
         errors,
       };
     }
@@ -324,6 +420,9 @@ export async function importFromExcel(file: File): Promise<ImportResult> {
     if (tags.length > 0) {
       setToStorage(STORAGE_KEYS.TAGS, tags);
     }
+    if (rules.length > 0) {
+      setToStorage(STORAGE_KEYS.RULES, rules);
+    }
 
     return {
       success: true,
@@ -331,6 +430,7 @@ export async function importFromExcel(file: File): Promise<ImportResult> {
       accountsImported: accounts.length,
       chainsImported: chains.length,
       tagsImported: tags.length,
+      rulesImported: rules.length,
       errors: [],
     };
   } catch (error) {
@@ -340,6 +440,7 @@ export async function importFromExcel(file: File): Promise<ImportResult> {
       accountsImported: 0,
       chainsImported: 0,
       tagsImported: 0,
+      rulesImported: 0,
       errors: [error instanceof Error ? error.message : 'Unknown error'],
     };
   }
@@ -362,6 +463,7 @@ export async function importFromFile(file: File): Promise<ImportResult> {
       accountsImported: 0,
       chainsImported: 0,
       tagsImported: 0,
+      rulesImported: 0,
       errors: ['Please upload a .json or .xlsx file'],
     };
   }

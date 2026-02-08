@@ -12,6 +12,38 @@ import { formatCurrency } from '@/app/utils/helpers';
 import { depositToChain } from '@/app/services/depositService';
 import { Button, Input, Modal } from '@/app/components/shared';
 
+// Custom SVG Icons
+const ChartIcon = () => (
+  <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+  </svg>
+);
+
+const ListIcon = () => (
+  <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+  </svg>
+);
+
+const InfinityIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.178 8c5.096 0 5.096 8 0 8-5.095 0-7.133-8-12.739-8-4.303 0-4.303 8 0 8 5.606 0 7.644-8 12.739-8z" />
+  </svg>
+);
+
+const BankIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+  </svg>
+);
+
+const WarningIcon = () => (
+  <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+  </svg>
+);
+
 interface ChainDepositModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -91,12 +123,12 @@ export function ChainDepositModal({
                 <h4 className="font-medium text-sm text-slate-700 dark:text-slate-300">
                   {chain.distributionMode === 'percentage' ? 'Percentage Distribution:' : 'Chain Order:'}
                 </h4>
-                <span className={`text-xs px-2 py-0.5 rounded-full ${
+                <span className={`text-xs px-2 py-0.5 rounded-full flex items-center ${
                   chain.distributionMode === 'percentage'
                     ? 'bg-french-blue/20 text-french-blue'
                     : 'bg-slate-200 text-slate-600 dark:bg-slate-600 dark:text-slate-300'
                 }`}>
-                  {chain.distributionMode === 'percentage' ? '📊 Percentage' : '📋 Sequential'}
+                  {chain.distributionMode === 'percentage' ? <><ChartIcon /> Percentage</> : <><ListIcon /> Sequential</>}
                 </span>
               </div>
               <div className="space-y-2">
@@ -128,8 +160,8 @@ export function ChainDepositModal({
                 {/* Buffer Account Display */}
                 {chain.distributionMode === 'sequential' && (
                   <div className="flex items-center gap-2 text-sm pt-2 border-t border-slate-200 dark:border-slate-600 mt-2">
-                    <span className="text-emerald-500">∞</span>
-                    <span>🏦</span>
+                    <span className="text-emerald-500"><InfinityIcon /></span>
+                    <span className="text-emerald-600"><BankIcon /></span>
                     <span className="text-jet-black dark:text-white">
                       Buffer Account
                     </span>
@@ -201,7 +233,7 @@ export function ChainDepositModal({
                 {preview.bufferDeposit && preview.bufferDeposit.amount > 0 && (
                   <div className="flex items-center justify-between p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border-2 border-dashed border-emerald-300 dark:border-emerald-700">
                     <div className="flex items-center gap-2">
-                      <span className="text-lg">🏦</span>
+                      <span className="text-emerald-600"><BankIcon /></span>
                       <span className="text-jet-black dark:text-white font-medium">
                         Buffer Account
                       </span>
@@ -220,8 +252,8 @@ export function ChainDepositModal({
             )}
 
             {preview.remainingAmount > 0 && !preview.bufferDeposit && (
-              <p className="text-sm text-amber-600 dark:text-amber-400">
-                ⚠️ {formatCurrency(preview.remainingAmount)} could not be deposited
+              <p className="text-sm text-amber-600 dark:text-amber-400 flex items-center">
+                <WarningIcon /> {formatCurrency(preview.remainingAmount)} could not be deposited
                 (all accounts reached their limits)
               </p>
             )}

@@ -170,6 +170,7 @@ export function RuleProvider({ children }: { children: ReactNode }) {
       id: generateId(),
       sourceAccountId: data.sourceAccountId,
       dayOfWeek: data.dayOfWeek,
+      frequency: data.frequency,
       thresholdAmount: data.thresholdAmount,
       targets: data.targets,
       isActive: true,

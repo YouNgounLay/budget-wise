@@ -12,3 +12,5 @@ export { ThemeToggle } from './ThemeToggle';
 export { ThemeSelector } from './ThemeSelector';
 export { ThemeCustomizer } from './ThemeCustomizer';
 export { DataImportExportModal } from './DataImportExportModal';
+export { SearchBar } from './SearchBar';
+export { SettingsModal } from './SettingsModal';

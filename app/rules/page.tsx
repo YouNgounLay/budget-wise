@@ -10,7 +10,7 @@ import { MainLayout } from '@/app/components/layout';
 import { Card, Button, Modal } from '@/app/components/shared';
 import { useAccounts } from '@/app/context';
 import { useRules } from '@/app/context';
-import { AccountRule, DAY_OF_WEEK_LABELS, DayOfWeek, RuleExecutionResult, AllocationTarget } from '@/app/types/rule';
+import { AccountRule, DAY_OF_WEEK_LABELS, DayOfWeek, RuleExecutionResult, AllocationTarget, RuleFrequency, RULE_FREQUENCY_LABELS, RULE_FREQUENCY_OPTIONS, formatNextTriggerDate } from '@/app/types/rule';
 import { Account } from '@/app/types/account';
 import { formatCurrency } from '@/app/utils/helpers';
 
@@ -27,6 +27,7 @@ export default function RulesPage() {
   
   // Form state for creating new rules
   const [formDayOfWeek, setFormDayOfWeek] = useState<DayOfWeek>(0);
+  const [formFrequency, setFormFrequency] = useState<RuleFrequency>('weekly');
   const [formThreshold, setFormThreshold] = useState<string>('');
   const [formTargets, setFormTargets] = useState<AllocationTarget[]>([]);
 
@@ -72,6 +73,7 @@ export default function RulesPage() {
   const resetForm = () => {
     setSelectedAccountId('');
     setFormDayOfWeek(0);
+    setFormFrequency('weekly');
     setFormThreshold('');
     setFormTargets([]);
   };
@@ -88,6 +90,7 @@ export default function RulesPage() {
     createRule({
       sourceAccountId: selectedAccountId,
       dayOfWeek: formDayOfWeek,
+      frequency: formFrequency,
       thresholdAmount: parseFloat(formThreshold),
       targets: formTargets,
     });
@@ -140,7 +143,11 @@ export default function RulesPage() {
         {/* Rules List */}
         {rules.length === 0 ? (
           <Card className="text-center py-12">
-            <div className="text-4xl mb-4">📋</div>
+            <div className="text-4xl mb-4 flex justify-center text-slate-400">
+              <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+              </svg>
+            </div>
             <h3 className="text-lg font-semibold text-foreground mb-2">No Rules Yet</h3>
             <p className="text-muted mb-4">
               Create allocation rules to automatically distribute excess funds
@@ -193,9 +200,16 @@ export default function RulesPage() {
                                 {rule.isActive ? 'Active' : 'Inactive'}
                               </span>
                               <span className="text-sm text-muted">
-                                Every <strong>{DAY_OF_WEEK_LABELS[rule.dayOfWeek]}</strong>
+                                <strong>{RULE_FREQUENCY_LABELS[rule.frequency]}</strong> on <strong>{DAY_OF_WEEK_LABELS[rule.dayOfWeek]}</strong>
                               </span>
                             </div>
+                            
+                            {/* Next trigger date */}
+                            {rule.isActive && (
+                              <p className="text-sm text-french-blue dark:text-fresh-sky mb-2">
+                                <span className="font-medium">Next trigger:</span> {formatNextTriggerDate(rule)}
+                              </p>
+                            )}
 
                             {/* Threshold */}
                             <p className="text-sm text-foreground mb-2">
@@ -304,6 +318,24 @@ export default function RulesPage() {
               {accounts.map((account) => (
                 <option key={account.id} value={account.id}>
                   {account.name} ({formatCurrency(account.amount)})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Frequency */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Frequency
+            </label>
+            <select
+              value={formFrequency}
+              onChange={(e) => setFormFrequency(e.target.value as RuleFrequency)}
+              className="w-full px-3 py-2 rounded-lg border border-border bg-surface text-foreground"
+            >
+              {RULE_FREQUENCY_OPTIONS.map(({ value, label }) => (
+                <option key={value} value={value}>
+                  {label}
                 </option>
               ))}
             </select>

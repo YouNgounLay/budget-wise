@@ -3,6 +3,7 @@
 /**
  * Manage Chain Accounts Modal Component
  * Modal for adding, removing, and reordering accounts in a chain
+ * @deprecated Use ChainEditModal instead - this component is kept for backwards compatibility
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
@@ -10,6 +11,50 @@ import { Chain, ChainDistributionMode } from '@/app/types/chain';
 import { Account, ACCOUNT_ICONS, ACCOUNT_COLORS } from '@/app/types/account';
 import { formatCurrency } from '@/app/utils/helpers';
 import { Button, Input, Modal, Select } from '@/app/components/shared';
+
+// Custom SVG Icons
+const ChartIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+  </svg>
+);
+
+const ListIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+  </svg>
+);
+
+const InfinityIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.178 8c5.096 0 5.096 8 0 8-5.095 0-7.133-8-12.739-8-4.303 0-4.303 8 0 8 5.606 0 7.644-8 12.739-8z" />
+  </svg>
+);
+
+const BankIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+  </svg>
+);
+
+const CheckIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+  </svg>
+);
+
+const CloseIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+  </svg>
+);
+
+const EditIcon = () => (
+  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+  </svg>
+);
 
 interface ManageChainAccountsModalProps {
   isOpen: boolean;
@@ -162,7 +207,7 @@ export function ManageChainAccountsModal({
           <div className="flex items-center justify-between">
             <div>
               <h4 className="font-medium text-jet-black dark:text-white flex items-center gap-2">
-                {isPercentageMode ? '📊' : '📋'} Distribution Mode
+                {isPercentageMode ? <ChartIcon /> : <ListIcon />} Distribution Mode
               </h4>
               <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
                 {isPercentageMode
@@ -342,13 +387,13 @@ export function ManageChainAccountsModal({
                             onClick={() => handleSavePercentage(account.id)}
                             className="p-1 text-emerald-600 hover:bg-emerald-100 rounded"
                           >
-                            ✓
+                            <CheckIcon />
                           </button>
                           <button
                             onClick={() => setEditingPercentageId(null)}
                             className="p-1 text-slate-500 hover:bg-slate-100 rounded"
                           >
-                            ✕
+                            <CloseIcon />
                           </button>
                         </div>
                       ) : (
@@ -357,9 +402,9 @@ export function ManageChainAccountsModal({
                             setEditingPercentageId(account.id);
                             setEditPercentageValue(account.percentage.toString());
                           }}
-                          className="text-sm text-slate-500 hover:text-french-blue"
+                          className="text-sm text-slate-500 hover:text-french-blue flex items-center gap-1"
                         >
-                          {account.percentage}% ✎
+                          {account.percentage}% <EditIcon />
                         </button>
                       )
                     ) : (
@@ -378,13 +423,13 @@ export function ManageChainAccountsModal({
                             onClick={() => handleSaveLimit(account.id)}
                             className="p-1 text-emerald-600 hover:bg-emerald-100 rounded"
                           >
-                            ✓
+                            <CheckIcon />
                           </button>
                           <button
                             onClick={() => setEditingLimitId(null)}
                             className="p-1 text-slate-500 hover:bg-slate-100 rounded"
                           >
-                            ✕
+                            <CloseIcon />
                           </button>
                         </div>
                       ) : (
@@ -393,9 +438,9 @@ export function ManageChainAccountsModal({
                             setEditingLimitId(account.id);
                             setEditLimitValue(account.limit.toString());
                           }}
-                          className="text-sm text-slate-500 hover:text-french-blue"
+                          className="text-sm text-slate-500 hover:text-french-blue flex items-center gap-1"
                         >
-                          Limit: {formatCurrency(account.limit)} ✎
+                          Limit: {formatCurrency(account.limit)} <EditIcon />
                         </button>
                       )
                     )}
@@ -433,7 +478,7 @@ export function ManageChainAccountsModal({
           <div className="flex items-center justify-between">
             <div>
               <h4 className="font-medium text-jet-black dark:text-white flex items-center gap-2">
-                <span className="text-lg">∞</span>
+                <span className="text-emerald-600"><InfinityIcon /></span>
                 Buffer Account
               </h4>
               <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
@@ -462,7 +507,7 @@ export function ManageChainAccountsModal({
             <div className="mt-3 p-3 bg-surface rounded-lg border border-emerald-200 dark:border-emerald-700">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="text-xl">🏦</span>
+                  <span className="text-emerald-600"><BankIcon /></span>
                   <span className="font-medium text-foreground">Chain Buffer</span>
                 </div>
                 <div className="text-right">

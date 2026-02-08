@@ -12,6 +12,19 @@ import { Account, ACCOUNT_ICONS, ACCOUNT_COLORS } from '@/app/types/account';
 import { formatCurrency } from '@/app/utils/helpers';
 import { Card } from '@/app/components/shared';
 
+// Custom SVG Icons
+const InfinityIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.178 8c5.096 0 5.096 8 0 8-5.095 0-7.133-8-12.739-8-4.303 0-4.303 8 0 8 5.606 0 7.644-8 12.739-8z" />
+  </svg>
+);
+
+const BankIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+  </svg>
+);
+
 interface ChainDisplayProps {
   chain: Chain;
   accounts: Account[];
@@ -208,12 +221,12 @@ export function ChainDisplay({
                 <div
                   className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/30 dark:to-teal-900/30 border-2 border-dashed border-emerald-400 dark:border-emerald-600"
                 >
-                  <span className="text-xl">🏦</span>
+                  <span className="text-emerald-600"><BankIcon /></span>
                   <div className="text-sm">
                     <p className="font-medium text-jet-black dark:text-white flex items-center gap-1">
                       Buffer
                       <span className="text-xs px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-300">
-                        ∞
+                        <InfinityIcon className="w-3 h-3 inline" />
                       </span>
                     </p>
                     <p className="text-slate-500 dark:text-slate-400">

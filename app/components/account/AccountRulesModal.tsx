@@ -14,6 +14,10 @@ import {
   DayOfWeek,
   DAY_OF_WEEK_LABELS,
   RuleExecutionResult,
+  RuleFrequency,
+  RULE_FREQUENCY_OPTIONS,
+  RULE_FREQUENCY_LABELS,
+  formatNextTriggerDate,
 } from '@/app/types/rule';
 import { formatCurrency } from '@/app/utils/helpers';
 import { Button, Input, Modal, Select } from '@/app/components/shared';
@@ -45,6 +49,7 @@ export function AccountRulesModal({
 }: AccountRulesModalProps) {
   const [isCreating, setIsCreating] = useState(false);
   const [dayOfWeek, setDayOfWeek] = useState<DayOfWeek>(1);
+  const [frequency, setFrequency] = useState<RuleFrequency>('weekly');
   const [thresholdAmount, setThresholdAmount] = useState<string>('');
   const [targets, setTargets] = useState<AllocationTarget[]>([]);
   const [selectedTargetId, setSelectedTargetId] = useState<string>('');
@@ -75,6 +80,7 @@ export function AccountRulesModal({
   const resetForm = useCallback(() => {
     setIsCreating(false);
     setDayOfWeek(1);
+    setFrequency('weekly');
     setThresholdAmount('');
     setTargets([]);
     setSelectedTargetId('');
@@ -124,6 +130,7 @@ export function AccountRulesModal({
     const result = onCreateRule({
       sourceAccountId: account.id,
       dayOfWeek,
+      frequency,
       thresholdAmount: threshold,
       targets,
     });
@@ -256,8 +263,8 @@ export function AccountRulesModal({
             📅 How Rules Work
           </h4>
           <p className="text-sm text-amber-700 dark:text-amber-400">
-            Rules run weekly on your selected day. If the account balance exceeds
-            the threshold, excess funds are automatically distributed to target
+            Rules run on your selected day based on your chosen frequency (weekly, fortnightly, monthly, or annually). 
+            If the account balance exceeds the threshold, excess funds are automatically distributed to target
             accounts based on percentages you set.
           </p>
         </div>
@@ -291,12 +298,17 @@ export function AccountRulesModal({
                           {rule.isActive ? 'Active' : 'Paused'}
                         </span>
                         <span className="text-sm font-medium text-jet-black dark:text-white">
-                          Every {DAY_OF_WEEK_LABELS[rule.dayOfWeek]}
+                          {RULE_FREQUENCY_LABELS[rule.frequency]} on {DAY_OF_WEEK_LABELS[rule.dayOfWeek]}
                         </span>
                       </div>
                       <p className="text-sm text-slate-500 mt-1">
                         When balance exceeds {formatCurrency(rule.thresholdAmount)}
                       </p>
+                      {rule.isActive && (
+                        <p className="text-sm text-french-blue dark:text-fresh-sky mt-1">
+                          <span className="font-medium">Next trigger:</span> {formatNextTriggerDate(rule)}
+                        </p>
+                      )}
                       <div className="mt-2 space-y-1">
                         {rule.targets.map((target) => {
                           const targetAcc = accounts.find(
@@ -355,6 +367,15 @@ export function AccountRulesModal({
 
             <div className="grid grid-cols-2 gap-4">
               <Select
+                label="Frequency"
+                options={RULE_FREQUENCY_OPTIONS.map(({ value, label }) => ({
+                  value,
+                  label,
+                }))}
+                value={frequency}
+                onChange={(e) => setFrequency(e.target.value as RuleFrequency)}
+              />
+              <Select
                 label="Day of Week"
                 options={Object.entries(DAY_OF_WEEK_LABELS).map(([value, label]) => ({
                   value,
@@ -363,6 +384,9 @@ export function AccountRulesModal({
                 value={dayOfWeek.toString()}
                 onChange={(e) => setDayOfWeek(parseInt(e.target.value) as DayOfWeek)}
               />
+            </div>
+            
+            <div className="grid grid-cols-1 gap-4">
               <Input
                 label="Threshold Amount"
                 type="number"
@@ -400,7 +424,9 @@ export function AccountRulesModal({
                             onClick={() => handleRemoveTarget(target.accountId)}
                             className="text-rose-500 hover:bg-rose-100 rounded p-1"
                           >
-                            ✕
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
                           </button>
                         </div>
                       </div>

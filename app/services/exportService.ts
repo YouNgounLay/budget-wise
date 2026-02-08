@@ -7,14 +7,16 @@ import * as XLSX from 'xlsx';
 import { Account } from '@/app/types/account';
 import { Chain } from '@/app/types/chain';
 import { Tag } from '@/app/types/tag';
+import { AccountRule } from '@/app/types/rule';
 import { getAllAccounts } from './accountService';
 import { getAllChains } from './chainService';
 import { getAllTags } from './tagService';
+import { getAllRules } from './ruleService';
 
 const APP_NAME = 'BudgetWise';
-const EXPORT_VERSION = '1.1';
+const EXPORT_VERSION = '1.2';
 
-interface ExportData {
+export interface ExportData {
   metadata: {
     appName: string;
     version: string;
@@ -22,10 +24,12 @@ interface ExportData {
     accountCount: number;
     chainCount: number;
     tagCount: number;
+    ruleCount: number;
   };
   accounts: Account[];
   chains: Chain[];
   tags: Tag[];
+  rules: AccountRule[];
 }
 
 /**
@@ -35,6 +39,7 @@ function gatherExportData(): ExportData {
   const accounts = getAllAccounts();
   const chains = getAllChains();
   const tags = getAllTags();
+  const rules = getAllRules();
   
   return {
     metadata: {
@@ -44,10 +49,12 @@ function gatherExportData(): ExportData {
       accountCount: accounts.length,
       chainCount: chains.length,
       tagCount: tags.length,
+      ruleCount: rules.length,
     },
     accounts,
     chains,
     tags,
+    rules,
   };
 }
 
@@ -235,6 +242,62 @@ export function exportToExcel(): void {
   ];
   XLSX.utils.book_append_sheet(workbook, tagsSheet, 'Tags');
 
+  // Rules sheet
+  const ruleHeaders = [
+    'ID',
+    'Source Account ID',
+    'Day of Week',
+    'Frequency',
+    'Threshold Amount',
+    'Is Active',
+    'Last Executed',
+    'Created At',
+    'Updated At',
+  ];
+  const ruleRows = data.rules.map((rule) => [
+    rule.id,
+    rule.sourceAccountId,
+    rule.dayOfWeek,
+    rule.frequency,
+    rule.thresholdAmount,
+    rule.isActive ? 'true' : 'false',
+    rule.lastExecuted || '',
+    rule.createdAt,
+    rule.updatedAt,
+  ]);
+  const rulesSheet = XLSX.utils.aoa_to_sheet([ruleHeaders, ...ruleRows]);
+  rulesSheet['!cols'] = [
+    { wch: 15 },
+    { wch: 20 },
+    { wch: 12 },
+    { wch: 15 },
+    { wch: 18 },
+    { wch: 10 },
+    { wch: 25 },
+    { wch: 25 },
+    { wch: 25 },
+  ];
+  XLSX.utils.book_append_sheet(workbook, rulesSheet, 'Rules');
+
+  // Rule Targets sheet (relationship table)
+  const ruleTargetHeaders = ['Rule ID', 'Target Account ID', 'Percentage'];
+  const ruleTargetRows: (string | number)[][] = [];
+  data.rules.forEach((rule) => {
+    rule.targets.forEach((target) => {
+      ruleTargetRows.push([rule.id, target.accountId, target.percentage]);
+    });
+  });
+  const ruleTargetsSheet = XLSX.utils.aoa_to_sheet([
+    ruleTargetHeaders,
+    ...ruleTargetRows,
+  ]);
+  ruleTargetsSheet['!cols'] = [
+    { wch: 15 },
+    { wch: 20 },
+    { wch: 12 },
+  ];
+  XLSX.utils.book_append_sheet(workbook, ruleTargetsSheet, 'Rule Targets');
+
   // Generate and download
   const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
   const blob = new Blob([excelBuffer], {
@@ -243,5 +306,3 @@ export function exportToExcel(): void {
   const filename = `budgetwise-export-${new Date().toISOString().split('T')[0]}.xlsx`;
   downloadFile(blob, filename);
 }
-
-export type { ExportData };

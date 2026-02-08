@@ -12,6 +12,8 @@ import { RuleProvider } from './context/RuleContext';
 import { TagProvider } from './context/TagContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ThemeCustomizationProvider } from './context/ThemeCustomizationContext';
+import { TutorialProvider } from './context/TutorialContext';
+import { TutorialOverlay } from './components/tutorial';
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -24,7 +26,12 @@ export function Providers({ children }: ProvidersProps) {
         <TagProvider>
           <AccountProvider>
             <ChainProvider>
-              <RuleProvider>{children}</RuleProvider>
+              <RuleProvider>
+                <TutorialProvider>
+                  {children}
+                  <TutorialOverlay />
+                </TutorialProvider>
+              </RuleProvider>
             </ChainProvider>
           </AccountProvider>
         </TagProvider>

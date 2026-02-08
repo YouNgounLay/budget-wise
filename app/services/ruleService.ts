@@ -140,6 +140,7 @@ export function createRule(data: CreateAccountRuleDTO): AccountRule | null {
     id: generateId(),
     sourceAccountId: data.sourceAccountId,
     dayOfWeek: data.dayOfWeek,
+    frequency: data.frequency,
     thresholdAmount: data.thresholdAmount,
     targets: data.targets,
     isActive: true,

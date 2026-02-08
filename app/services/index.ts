@@ -8,3 +8,4 @@ export * from './chainService';
 export * from './depositService';
 export * from './exportService';
 export * from './importService';
+export * from './ruleService';

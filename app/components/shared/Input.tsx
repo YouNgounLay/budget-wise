@@ -31,16 +31,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           id={inputId}
           autoComplete="off"
-          style={{
-            width: '100%',
-            padding: '0.5rem 1rem',
-            borderRadius: '0.5rem',
-            border: error ? '1px solid #f43f5e' : '1px solid #cbd5e1',
-            backgroundColor: 'white',
-            color: '#122C34',
-            outline: 'none',
-          }}
-          className={className}
+          className={`
+            w-full px-4 py-2 rounded-lg border transition-colors duration-200
+            bg-surface text-foreground
+            focus:outline-none focus:ring-2 focus:ring-french-blue focus:border-transparent
+            disabled:opacity-50 disabled:cursor-not-allowed
+            ${error ? 'border-rose-500' : 'border-border'}
+            ${className}
+          `}
           {...props}
         />
         {error && <p className="mt-1 text-sm text-rose-500">{error}</p>}

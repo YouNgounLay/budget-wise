@@ -20,11 +20,13 @@ import {
   CreateChainDTO,
   UpdateChainDTO,
   ChainAccountConfig,
+  ChainDistributionMode,
 } from '@/app/types/chain';
 import { getAllChains, saveAllChains } from '@/app/services/chainService';
 import { generateId, getCurrentTimestamp } from '@/app/utils/helpers';
 
 const DEFAULT_LIMIT = 2000;
+const DEFAULT_PERCENTAGE = 0;
 
 // State type
 interface ChainState {
@@ -52,7 +54,8 @@ interface ChainContextType {
   addAccountToChain: (
     chainId: string,
     accountId: string,
-    limit?: number
+    limit?: number,
+    percentage?: number
   ) => Chain | null;
   removeAccountFromChain: (chainId: string, accountId: string) => Chain | null;
   reorderChainAccounts: (chainId: string, newOrder: string[]) => Chain | null;
@@ -61,7 +64,14 @@ interface ChainContextType {
     accountId: string,
     newLimit: number
   ) => Chain | null;
+  updateAccountPercentageInChain: (
+    chainId: string,
+    accountId: string,
+    newPercentage: number
+  ) => Chain | null;
   setOverflowAccount: (chainId: string, accountId: string | null) => Chain | null;
+  toggleDistributionMode: (chainId: string) => Chain | null;
+  setDistributionMode: (chainId: string, mode: ChainDistributionMode) => Chain | null;
 }
 
 // Initial state
@@ -143,6 +153,7 @@ export function ChainProvider({ children }: { children: ReactNode }) {
       accounts: [],
       overflowAccountId: null,
       defaultLimit: data.defaultLimit ?? DEFAULT_LIMIT,
+      distributionMode: 'sequential',
       createdAt: timestamp,
       updatedAt: timestamp,
     };
@@ -178,7 +189,8 @@ export function ChainProvider({ children }: { children: ReactNode }) {
   const addAccountToChain = useCallback((
     chainId: string,
     accountId: string,
-    limit?: number
+    limit?: number,
+    percentage?: number
   ): Chain | null => {
     const chain = state.chains.find((c) => c.id === chainId);
     if (!chain) return null;
@@ -194,6 +206,7 @@ export function ChainProvider({ children }: { children: ReactNode }) {
     const newAccountConfig: ChainAccountConfig = {
       accountId,
       limit: limit ?? chain.defaultLimit,
+      percentage: percentage ?? DEFAULT_PERCENTAGE,
     };
 
     const updatedChain: Chain = {
@@ -304,6 +317,62 @@ export function ChainProvider({ children }: { children: ReactNode }) {
     return updatedChain;
   }, [state.chains]);
 
+  const updateAccountPercentageInChain = useCallback((
+    chainId: string,
+    accountId: string,
+    newPercentage: number
+  ): Chain | null => {
+    const chain = state.chains.find((c) => c.id === chainId);
+    if (!chain) return null;
+
+    const updatedAccounts = chain.accounts.map((acc) =>
+      acc.accountId === accountId ? { ...acc, percentage: newPercentage } : acc
+    );
+
+    const updatedChain: Chain = {
+      ...chain,
+      accounts: updatedAccounts,
+      updatedAt: getCurrentTimestamp(),
+    };
+
+    dispatch({ type: 'UPDATE_CHAIN', payload: updatedChain });
+    return updatedChain;
+  }, [state.chains]);
+
+  const toggleDistributionMode = useCallback((chainId: string): Chain | null => {
+    const chain = state.chains.find((c) => c.id === chainId);
+    if (!chain) return null;
+
+    const newMode: ChainDistributionMode = 
+      chain.distributionMode === 'sequential' ? 'percentage' : 'sequential';
+
+    const updatedChain: Chain = {
+      ...chain,
+      distributionMode: newMode,
+      updatedAt: getCurrentTimestamp(),
+    };
+
+    dispatch({ type: 'UPDATE_CHAIN', payload: updatedChain });
+    return updatedChain;
+  }, [state.chains]);
+
+  const setDistributionMode = useCallback((
+    chainId: string,
+    mode: ChainDistributionMode
+  ): Chain | null => {
+    const chain = state.chains.find((c) => c.id === chainId);
+    if (!chain) return null;
+
+    const updatedChain: Chain = {
+      ...chain,
+      distributionMode: mode,
+      updatedAt: getCurrentTimestamp(),
+    };
+
+    dispatch({ type: 'UPDATE_CHAIN', payload: updatedChain });
+    return updatedChain;
+  }, [state.chains]);
+
   const contextValue = useMemo(() => ({
     state,
     createChain,
@@ -314,7 +383,10 @@ export function ChainProvider({ children }: { children: ReactNode }) {
     removeAccountFromChain,
     reorderChainAccounts,
     updateAccountLimitInChain,
+    updateAccountPercentageInChain,
     setOverflowAccount,
+    toggleDistributionMode,
+    setDistributionMode,
   }), [
     state,
     createChain,
@@ -325,7 +397,10 @@ export function ChainProvider({ children }: { children: ReactNode }) {
     removeAccountFromChain,
     reorderChainAccounts,
     updateAccountLimitInChain,
+    updateAccountPercentageInChain,
     setOverflowAccount,
+    toggleDistributionMode,
+    setDistributionMode,
   ]);
 
   return (

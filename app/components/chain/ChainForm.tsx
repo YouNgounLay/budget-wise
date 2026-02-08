@@ -116,7 +116,7 @@ export function ChainForm({
           helperText="Default limit for each account in this chain"
         />
 
-        <div className="flex gap-3 pt-4">
+        <div className="flex gap-3 pt-4 sticky bottom-0 bg-surface pb-1">
           <Button type="button" variant="secondary" onClick={onClose} fullWidth>
             Cancel
           </Button>

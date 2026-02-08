@@ -1,14 +1,14 @@
 # Budget-wise - Your account based budget planner application
 
-## Feature  
+## Feature - Custom Rules For Each Account
 
-I want to implement a data import/export option. The "export" button should allow the user export their current data in a form of excel spreadsheet, as the majority of the users are non-technical. But there is also an option to opt for JSON format too. The import function should allow the user to import data into the system, based on the structured defined in the export function.
+Add in an additional section that allows the user to add in special limited ruleset to account. This rulesets include:
+- By setting the day of the week: DOW as the baseline, the user can set X amount to an account. Every week after the DOW has passed, and the amount of money in the account exceed the X amount, the system would then automatically allocate the exceeding fund to a list of account/s based on some % assigned by the user. 
+- It is important to note that if a ruleset has been allocated to from account A to B. There should not be another ruleset for the same two accounts.
 
-## Patching 
-1. Please change the dollar bag emoji and chain emoji icon to custom icon of similar look
-2. The color changing function only works for "primary and text" but not for other options, please fix that.
-3. When you toggle the theme from light to dark mode, the user can still see a bit of white pixel behind the "circle".
+## Feature - Modify Chained Account
 
+Right now, the chained deposit system allows the user to deposit X amount of money to the chain. The system then deposit the money from left to right like a linked list, moving to the next account after a certain limit has been reached. There should be a toggle option that allows the user to instead, the user could assign a percentage to all account in the chain, and when the user deposit money into the chain, the system would automatically allocate the money into each respective account based on the %. 
 
 ---
 **Please follows all the rules in "rulesets" folder"**  

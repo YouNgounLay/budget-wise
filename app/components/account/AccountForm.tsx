@@ -179,7 +179,7 @@ export function AccountForm({
           </button>
           
           {showAppearance && (
-            <div className="p-4 space-y-4 border-t border-slate-200 dark:border-slate-700 max-h-80 overflow-y-auto">
+            <div className="p-4 space-y-4 border-t border-slate-200 dark:border-slate-700 max-h-64 overflow-y-auto">
               <IconPicker
                 label="Select Icon"
                 value={formData.icon}
@@ -204,7 +204,8 @@ export function AccountForm({
           )}
         </div>
 
-        <div className="flex gap-3 pt-4">
+        {/* Sticky footer for action buttons */}
+        <div className="flex gap-3 pt-4 sticky bottom-0 bg-surface pb-1">
           <Button type="button" variant="secondary" onClick={onClose} fullWidth>
             Cancel
           </Button>

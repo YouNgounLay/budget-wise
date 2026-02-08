@@ -198,6 +198,7 @@ export async function importFromExcel(file: File): Promise<ImportResult> {
         const config: ChainAccountConfig = {
           accountId: String(row['Account ID'] || ''),
           limit: Number(row['Limit']) || 0,
+          percentage: Number(row['Percentage']) || 0,
         };
         
         if (!chainAccountsMap.has(chainId)) {
@@ -209,6 +210,8 @@ export async function importFromExcel(file: File): Promise<ImportResult> {
 
     const chains: Chain[] = chainsRaw.map((row) => {
       const chainId = String(row['ID'] || '');
+      const distributionModeRaw = String(row['Distribution Mode'] || 'sequential');
+      const distributionMode = distributionModeRaw === 'percentage' ? 'percentage' : 'sequential';
       return {
         id: chainId,
         name: String(row['Name'] || ''),
@@ -216,6 +219,7 @@ export async function importFromExcel(file: File): Promise<ImportResult> {
         defaultLimit: Number(row['Default Limit']) || 2000,
         overflowAccountId: row['Overflow Account ID'] ? String(row['Overflow Account ID']) : null,
         accounts: chainAccountsMap.get(chainId) || [],
+        distributionMode: distributionMode as 'sequential' | 'percentage',
         createdAt: String(row['Created At'] || new Date().toISOString()),
         updatedAt: String(row['Updated At'] || new Date().toISOString()),
       };

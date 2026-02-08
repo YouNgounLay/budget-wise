@@ -17,6 +17,7 @@ interface AccountCardProps {
   onDelete?: () => void;
   onDeposit?: () => void;
   onWithdraw?: () => void;
+  onManageRules?: () => void;
   compact?: boolean;
 }
 
@@ -27,6 +28,7 @@ export function AccountCard({
   onDelete,
   onDeposit,
   onWithdraw,
+  onManageRules,
   compact = false,
 }: AccountCardProps) {
   // Use customEmoji if icon is 'custom', otherwise use the preset icon
@@ -146,15 +148,15 @@ export function AccountCard({
         </div>
 
         {/* Quick actions */}
-        {(onDeposit || onWithdraw) && (
-          <div className="flex gap-2">
+        {(onDeposit || onWithdraw || onManageRules) && (
+          <div className="flex gap-2 flex-wrap">
             {onDeposit && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onDeposit();
                 }}
-                className="flex-1 px-3 py-2 text-sm font-medium rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50 transition-colors"
+                className="flex-1 min-w-[80px] px-3 py-2 text-sm font-medium rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50 transition-colors"
               >
                 + Deposit
               </button>
@@ -165,9 +167,20 @@ export function AccountCard({
                   e.stopPropagation();
                   onWithdraw();
                 }}
-                className="flex-1 px-3 py-2 text-sm font-medium rounded-lg bg-rose-100 text-rose-700 hover:bg-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:hover:bg-rose-900/50 transition-colors"
+                className="flex-1 min-w-[80px] px-3 py-2 text-sm font-medium rounded-lg bg-rose-100 text-rose-700 hover:bg-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:hover:bg-rose-900/50 transition-colors"
               >
                 - Withdraw
+              </button>
+            )}
+            {onManageRules && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onManageRules();
+                }}
+                className="flex-1 min-w-[80px] px-3 py-2 text-sm font-medium rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50 transition-colors"
+              >
+                📅 Rules
               </button>
             )}
           </div>

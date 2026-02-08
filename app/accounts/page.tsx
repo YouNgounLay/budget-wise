@@ -5,16 +5,19 @@
  * Dedicated page for managing accounts
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { MainLayout } from '../components/layout';
 import { Button } from '../components/shared';
 import {
   AccountList,
   AccountForm,
+  AccountRulesModal,
   TransactionModal,
 } from '../components/account';
 import { useAccounts } from '../context/AccountContext';
+import { useRules } from '../context/RuleContext';
 import { Account, CreateAccountDTO } from '../types/account';
+import { CreateAccountRuleDTO, RuleExecutionResult } from '../types/rule';
 import { formatCurrency } from '../utils/helpers';
 
 export default function AccountsPage() {
@@ -25,12 +28,24 @@ export default function AccountsPage() {
     deleteAccount,
     depositToAccount,
     withdrawFromAccount,
+    updateAccountsFromDeposit,
   } = useAccounts();
+  
+  const {
+    state: ruleState,
+    createRule,
+    deleteRule,
+    toggleRuleActive,
+    executeRule,
+    applyRuleExecution,
+  } = useRules();
+
   // Modal states
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | undefined>();
   const [transactionAccount, setTransactionAccount] = useState<Account | null>(null);
   const [transactionType, setTransactionType] = useState<'deposit' | 'withdraw'>('deposit');
+  const [rulesAccount, setRulesAccount] = useState<Account | null>(null);
 
   // Calculate stats
   const totalBalance = accountState.accounts.reduce((sum, acc) => sum + acc.amount, 0);
@@ -78,6 +93,31 @@ export default function AccountsPage() {
     }
   };
 
+  const handleManageRules = (account: Account) => {
+    setRulesAccount(account);
+  };
+
+  const handleCreateRule = useCallback((data: CreateAccountRuleDTO) => {
+    return createRule(data);
+  }, [createRule]);
+
+  const handleDeleteRule = useCallback((id: string) => {
+    deleteRule(id);
+  }, [deleteRule]);
+
+  const handleToggleRule = useCallback((id: string) => {
+    toggleRuleActive(id);
+  }, [toggleRuleActive]);
+
+  const handleExecuteRule = useCallback((ruleId: string): RuleExecutionResult | null => {
+    return executeRule(ruleId, accountState.accounts);
+  }, [executeRule, accountState.accounts]);
+
+  const handleApplyRuleExecution = useCallback((result: RuleExecutionResult) => {
+    const updatedAccounts = applyRuleExecution(result, accountState.accounts);
+    updateAccountsFromDeposit(updatedAccounts);
+  }, [applyRuleExecution, accountState.accounts, updateAccountsFromDeposit]);
+
   if (accountState.isLoading) {
     return (
       <MainLayout>
@@ -123,6 +163,15 @@ export default function AccountsPage() {
               {formatCurrency(totalBalance)}
             </p>
           </div>
+          <div className="w-px h-12 bg-border" />
+          <div>
+            <p className="text-sm text-muted">
+              Active Rules
+            </p>
+            <p className="text-2xl font-bold text-amber-600">
+              {ruleState.rules.filter((r) => r.isActive).length}
+            </p>
+          </div>
         </div>
 
         {/* Account list */}
@@ -132,6 +181,7 @@ export default function AccountsPage() {
           onDelete={handleDelete}
           onDeposit={handleDeposit}
           onWithdraw={handleWithdraw}
+          onManageRules={handleManageRules}
         />
       </div>
 
@@ -153,6 +203,20 @@ export default function AccountsPage() {
         account={transactionAccount}
         type={transactionType}
         onSubmit={handleTransaction}
+      />
+
+      {/* Account Rules Modal */}
+      <AccountRulesModal
+        isOpen={!!rulesAccount}
+        onClose={() => setRulesAccount(null)}
+        account={rulesAccount}
+        accounts={accountState.accounts}
+        rules={ruleState.rules}
+        onCreateRule={handleCreateRule}
+        onDeleteRule={handleDeleteRule}
+        onToggleRule={handleToggleRule}
+        onExecuteRule={handleExecuteRule}
+        onApplyRuleExecution={handleApplyRuleExecution}
       />
     </MainLayout>
   );

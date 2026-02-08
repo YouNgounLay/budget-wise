@@ -39,6 +39,7 @@
 }
 
 @theme inline {
+  /* Color tokens - using CSS variable references */
   --color-background: var(--background);
   --color-surface: var(--surface);
   --color-foreground: var(--foreground);
@@ -192,6 +193,34 @@ html.dark .content a:hover {
 
 .animate-modal-enter {
   animation: modal-enter 0.2s ease-out;
+}
+
+/* ============================
+   Modal Component Styles
+   ============================ */
+.modal-content {
+  background-color: var(--surface) !important;
+}
+
+/* ============================
+   Surface Background Utility
+   ============================ */
+.bg-surface {
+  background-color: var(--surface);
+}
+
+/* ============================
+   Border Color Utility
+   ============================ */
+.border-border {
+  border-color: var(--border);
+}
+
+/* ============================
+   Foreground Color Utility
+   ============================ */
+.text-foreground {
+  color: var(--foreground);
 }
 
 /* Custom scrollbar */

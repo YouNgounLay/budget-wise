@@ -87,13 +87,24 @@ export function ChainDepositModal({
             />
 
             <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4">
-              <h4 className="font-medium text-sm text-slate-700 dark:text-slate-300 mb-2">
-                Chain Order:
-              </h4>
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-medium text-sm text-slate-700 dark:text-slate-300">
+                  {chain.distributionMode === 'percentage' ? 'Percentage Distribution:' : 'Chain Order:'}
+                </h4>
+                <span className={`text-xs px-2 py-0.5 rounded-full ${
+                  chain.distributionMode === 'percentage'
+                    ? 'bg-french-blue/20 text-french-blue'
+                    : 'bg-slate-200 text-slate-600 dark:bg-slate-600 dark:text-slate-300'
+                }`}>
+                  {chain.distributionMode === 'percentage' ? '📊 Percentage' : '📋 Sequential'}
+                </span>
+              </div>
               <div className="space-y-2">
                 {chain.accounts.map((ca, index) => {
                   const account = accounts.find((a) => a.id === ca.accountId);
                   if (!account) return null;
+
+                  const isPercentageMode = chain.distributionMode === 'percentage';
 
                   return (
                     <div
@@ -106,7 +117,10 @@ export function ChainDepositModal({
                         {account.name}
                       </span>
                       <span className="text-slate-500">
-                        ({formatCurrency(account.amount)} / {formatCurrency(ca.limit)})
+                        {isPercentageMode 
+                          ? `(${ca.percentage || 0}%)`
+                          : `(${formatCurrency(account.amount)} / ${formatCurrency(ca.limit)})`
+                        }
                       </span>
                     </div>
                   );
@@ -114,7 +128,7 @@ export function ChainDepositModal({
               </div>
             </div>
 
-            <div className="flex gap-3 pt-4">
+            <div className="flex gap-3 pt-4 sticky bottom-0 bg-surface pb-1">
               <Button type="button" variant="secondary" onClick={handleClose} fullWidth>
                 Cancel
               </Button>
@@ -176,7 +190,7 @@ export function ChainDepositModal({
               </p>
             )}
 
-            <div className="flex gap-3 pt-4">
+            <div className="flex gap-3 pt-4 sticky bottom-0 bg-surface pb-1">
               <Button
                 type="button"
                 variant="secondary"

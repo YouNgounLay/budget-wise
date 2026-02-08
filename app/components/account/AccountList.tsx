@@ -15,6 +15,7 @@ interface AccountListProps {
   onDelete?: (account: Account) => void;
   onDeposit?: (account: Account) => void;
   onWithdraw?: (account: Account) => void;
+  onManageRules?: (account: Account) => void;
   emptyMessage?: string;
 }
 
@@ -24,6 +25,7 @@ export function AccountList({
   onDelete,
   onDeposit,
   onWithdraw,
+  onManageRules,
   emptyMessage = 'No accounts yet. Create your first account to get started!',
 }: AccountListProps) {
   if (accounts.length === 0) {
@@ -49,6 +51,7 @@ export function AccountList({
           onDelete={onDelete ? () => onDelete(account) : undefined}
           onDeposit={onDeposit ? () => onDeposit(account) : undefined}
           onWithdraw={onWithdraw ? () => onWithdraw(account) : undefined}
+          onManageRules={onManageRules ? () => onManageRules(account) : undefined}
         />
       ))}
     </div>

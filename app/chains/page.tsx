@@ -30,7 +30,9 @@ export default function ChainsPage() {
     removeAccountFromChain,
     reorderChainAccounts,
     updateAccountLimitInChain,
+    updateAccountPercentageInChain,
     setOverflowAccount,
+    toggleDistributionMode,
   } = useChains();
 
   // Modal states
@@ -156,7 +158,9 @@ export default function ChainsPage() {
         onRemoveAccount={removeAccountFromChain}
         onReorder={reorderChainAccounts}
         onUpdateLimit={updateAccountLimitInChain}
+        onUpdatePercentage={updateAccountPercentageInChain}
         onSetOverflowAccount={setOverflowAccount}
+        onToggleDistributionMode={toggleDistributionMode}
       />
     </MainLayout>
   );

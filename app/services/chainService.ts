@@ -38,6 +38,7 @@ export function createChain(data: CreateChainDTO): Chain {
     accounts: [],
     overflowAccountId: null,
     defaultLimit: data.defaultLimit ?? DEFAULT_LIMIT,
+    distributionMode: 'sequential',
     createdAt: timestamp,
     updatedAt: timestamp,
   };
@@ -103,6 +104,7 @@ export function addAccountToChain(
   const newAccountConfig: ChainAccountConfig = {
     accountId,
     limit: limit ?? chain.defaultLimit,
+    percentage: 0,
   };
 
   const updatedAccounts = [...chain.accounts, newAccountConfig];

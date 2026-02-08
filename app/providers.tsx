@@ -8,6 +8,7 @@
 import React from 'react';
 import { AccountProvider } from './context/AccountContext';
 import { ChainProvider } from './context/ChainContext';
+import { RuleProvider } from './context/RuleContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ThemeCustomizationProvider } from './context/ThemeCustomizationContext';
 
@@ -20,7 +21,9 @@ export function Providers({ children }: ProvidersProps) {
     <ThemeProvider>
       <ThemeCustomizationProvider>
         <AccountProvider>
-          <ChainProvider>{children}</ChainProvider>
+          <ChainProvider>
+            <RuleProvider>{children}</RuleProvider>
+          </ChainProvider>
         </AccountProvider>
       </ThemeCustomizationProvider>
     </ThemeProvider>

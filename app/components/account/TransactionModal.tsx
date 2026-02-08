@@ -111,7 +111,7 @@ export function TransactionModal({
           </div>
         )}
 
-        <div className="flex gap-3 pt-4">
+        <div className="flex gap-3 pt-4 sticky bottom-0 bg-surface pb-1">
           <Button type="button" variant="secondary" onClick={handleClose} fullWidth>
             Cancel
           </Button>

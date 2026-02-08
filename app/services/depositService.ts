@@ -10,11 +10,37 @@ import { getChainById } from './chainService';
 import { getCurrentTimestamp } from '@/app/utils/helpers';
 
 /**
- * Deposits money to a chain, cascading from left to right
- * Money fills each account until its limit is reached, then moves to the next
+ * Main deposit function that routes to appropriate strategy based on chain mode
  */
 export function depositToChain(
   chainId: string,
+  amount: number,
+  accounts: Account[]
+): DepositResult {
+  const chain = getChainById(chainId);
+  if (!chain) {
+    return {
+      success: false,
+      deposits: [],
+      remainingAmount: amount,
+      message: 'Chain not found',
+    };
+  }
+
+  // Route to appropriate deposit strategy
+  if (chain.distributionMode === 'percentage') {
+    return depositToChainByPercentage(chain, amount, accounts);
+  }
+  
+  return depositToChainSequential(chain, amount, accounts);
+}
+
+/**
+ * Deposits money to a chain using percentage-based distribution
+ * Each account receives a percentage of the total deposit amount
+ */
+export function depositToChainByPercentage(
+  chain: Chain,
   amount: number,
   accounts: Account[]
 ): DepositResult {
@@ -27,13 +53,86 @@ export function depositToChain(
     };
   }
 
-  const chain = getChainById(chainId);
-  if (!chain) {
+  if (chain.accounts.length === 0) {
     return {
       success: false,
       deposits: [],
       remainingAmount: amount,
-      message: 'Chain not found',
+      message: 'Chain has no accounts',
+    };
+  }
+
+  // Calculate total percentage to validate
+  const totalPercentage = chain.accounts.reduce(
+    (sum, acc) => sum + (acc.percentage || 0),
+    0
+  );
+
+  if (totalPercentage !== 100) {
+    return {
+      success: false,
+      deposits: [],
+      remainingAmount: amount,
+      message: `Account percentages must sum to 100% (current: ${totalPercentage}%)`,
+    };
+  }
+
+  const deposits: DepositResult['deposits'] = [];
+  let totalDeposited = 0;
+
+  // Process each account with its percentage
+  for (const chainAccount of chain.accounts) {
+    const account = accounts.find((a) => a.id === chainAccount.accountId);
+    if (!account) continue;
+
+    const percentage = chainAccount.percentage || 0;
+    const depositAmount = Math.round((amount * percentage) / 100 * 100) / 100; // Round to 2 decimal places
+
+    if (depositAmount > 0) {
+      const newBalance = account.amount + depositAmount;
+
+      deposits.push({
+        accountId: account.id,
+        accountName: account.name,
+        amount: depositAmount,
+        newBalance,
+      });
+
+      totalDeposited += depositAmount;
+    }
+  }
+
+  // Handle rounding differences by adjusting the first deposit
+  const roundingDiff = amount - totalDeposited;
+  if (roundingDiff !== 0 && deposits.length > 0) {
+    deposits[0].amount += roundingDiff;
+    deposits[0].newBalance += roundingDiff;
+    totalDeposited += roundingDiff;
+  }
+
+  return {
+    success: true,
+    deposits,
+    remainingAmount: 0,
+    message: `Successfully distributed ${formatMoney(totalDeposited)} by percentage across ${deposits.length} account(s).`,
+  };
+}
+
+/**
+ * Deposits money to a chain using sequential (limit-based) distribution
+ * Money fills each account until its limit is reached, then moves to the next
+ */
+export function depositToChainSequential(
+  chain: Chain,
+  amount: number,
+  accounts: Account[]
+): DepositResult {
+  if (amount <= 0) {
+    return {
+      success: false,
+      deposits: [],
+      remainingAmount: amount,
+      message: 'Deposit amount must be greater than 0',
     };
   }
 

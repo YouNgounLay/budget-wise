@@ -136,6 +136,7 @@ export function exportToExcel(): void {
     'Description',
     'Default Limit',
     'Overflow Account ID',
+    'Distribution Mode',
     'Created At',
     'Updated At',
   ];
@@ -145,6 +146,7 @@ export function exportToExcel(): void {
     chain.description,
     chain.defaultLimit,
     chain.overflowAccountId || '',
+    chain.distributionMode || 'sequential',
     chain.createdAt,
     chain.updatedAt,
   ]);
@@ -155,17 +157,18 @@ export function exportToExcel(): void {
     { wch: 40 },
     { wch: 15 },
     { wch: 20 },
+    { wch: 18 },
     { wch: 25 },
     { wch: 25 },
   ];
   XLSX.utils.book_append_sheet(workbook, chainsSheet, 'Chains');
 
   // Chain Accounts sheet (relationship table)
-  const chainAccountHeaders = ['Chain ID', 'Chain Name', 'Account ID', 'Limit'];
+  const chainAccountHeaders = ['Chain ID', 'Chain Name', 'Account ID', 'Limit', 'Percentage'];
   const chainAccountRows: (string | number)[][] = [];
   data.chains.forEach((chain) => {
     chain.accounts.forEach((acc) => {
-      chainAccountRows.push([chain.id, chain.name, acc.accountId, acc.limit]);
+      chainAccountRows.push([chain.id, chain.name, acc.accountId, acc.limit, acc.percentage || 0]);
     });
   });
   const chainAccountsSheet = XLSX.utils.aoa_to_sheet([
@@ -176,6 +179,7 @@ export function exportToExcel(): void {
     { wch: 15 },
     { wch: 25 },
     { wch: 15 },
+    { wch: 12 },
     { wch: 12 },
   ];
   XLSX.utils.book_append_sheet(workbook, chainAccountsSheet, 'Chain Accounts');

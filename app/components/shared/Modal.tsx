@@ -54,10 +54,10 @@ export function Modal({
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50"
+        className="fixed inset-0 bg-black/50"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -70,6 +70,9 @@ export function Modal({
           rounded-xl shadow-xl
           border border-border
           animate-modal-enter
+          my-auto
+          max-h-[90vh]
+          flex flex-col
         `}
         role="dialog"
         aria-modal="true"
@@ -77,7 +80,7 @@ export function Modal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
+        <div className="flex items-center justify-between p-4 border-b border-border shrink-0">
           <h2
             id="modal-title"
             className="text-lg font-semibold text-foreground"
@@ -109,8 +112,8 @@ export function Modal({
           )}
         </div>
 
-        {/* Body */}
-        <div className="p-4 relative z-10">{children}</div>
+        {/* Body - scrollable */}
+        <div className="p-4 relative z-10 overflow-y-auto flex-1">{children}</div>
       </div>
     </div>
   );

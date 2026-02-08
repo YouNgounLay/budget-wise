@@ -7,6 +7,7 @@ import { ACCOUNT_COLORS, ACCOUNT_ICONS } from "../types";
 const STORAGE_KEYS = {
   ACCOUNTS: 'budget-wise-accounts',
   CHAINS: 'budget-wise-chains',
+  RULES: 'budget-wise-rules',
 } as const;
 
 export function getFromStorage<T>(key: string): T | null {

@@ -40,6 +40,9 @@ export function createAccount(data: CreateAccountDTO): Account {
     amount: data.amount,
     icon: data.icon,
     color: data.color,
+    customColor: data.customColor,
+    customEmoji: data.customEmoji,
+    tagIds: data.tagIds || [],
     createdAt: timestamp,
     updatedAt: timestamp,
   };

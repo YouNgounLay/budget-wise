@@ -8,6 +8,7 @@ const STORAGE_KEYS = {
   ACCOUNTS: 'budget-wise-accounts',
   CHAINS: 'budget-wise-chains',
   RULES: 'budget-wise-rules',
+  TAGS: 'budget-wise-tags',
 } as const;
 
 export function getFromStorage<T>(key: string): T | null {

@@ -7,3 +7,4 @@ export * from './account';
 export * from './chain';
 export * from './rule';
 export * from './theme';
+export * from './tag';

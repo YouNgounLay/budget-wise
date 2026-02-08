@@ -10,9 +10,8 @@ import { MainLayout } from '../components/layout';
 import { Button } from '../components/shared';
 import {
   ChainList,
-  ChainForm,
   ChainDepositModal,
-  ManageChainAccountsModal,
+  ChainEditModal,
 } from '../components/chain';
 import { useAccounts } from '../context/AccountContext';
 import { useChains } from '../context/ChainContext';
@@ -37,32 +36,38 @@ export default function ChainsPage() {
   } = useChains();
 
   // Modal states
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingChain, setEditingChain] = useState<Chain | undefined>();
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingChain, setEditingChain] = useState<Chain | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
   const [depositChainId, setDepositChainId] = useState<string | null>(null);
-  const [managingChainId, setManagingChainId] = useState<string | null>(null);
 
   // Get live chain data from state
   const depositChain = depositChainId ? chainState.chains.find(c => c.id === depositChainId) || null : null;
-  const managingChain = managingChainId ? chainState.chains.find(c => c.id === managingChainId) || null : null;
+  // Get live editing chain data from state
+  const liveEditingChain = editingChain ? chainState.chains.find(c => c.id === editingChain.id) || null : null;
 
   // Handlers
-  const handleCreate = (data: CreateChainDTO) => {
-    createChain(data);
-    setIsFormOpen(false);
+  const handleCreate = () => {
+    setEditingChain(null);
+    setIsCreating(true);
+    setIsEditModalOpen(true);
   };
 
   const handleEdit = (chain: Chain) => {
     setEditingChain(chain);
-    setIsFormOpen(true);
+    setIsCreating(false);
+    setIsEditModalOpen(true);
   };
 
-  const handleUpdate = (data: CreateChainDTO) => {
-    if (editingChain) {
+  const handleSave = (data: CreateChainDTO) => {
+    if (isCreating) {
+      createChain(data);
+    } else if (editingChain) {
       updateChain(editingChain.id, data);
     }
-    setEditingChain(undefined);
-    setIsFormOpen(false);
+    setIsEditModalOpen(false);
+    setEditingChain(null);
+    setIsCreating(false);
   };
 
   const handleDelete = (chain: Chain) => {
@@ -108,7 +113,7 @@ export default function ChainsPage() {
               Create and manage automated deposit chains
             </p>
           </div>
-          <Button onClick={() => setIsFormOpen(true)}>+ New Chain</Button>
+          <Button onClick={handleCreate}>+ New Chain</Button>
         </div>
 
         {/* Info box */}
@@ -130,19 +135,28 @@ export default function ChainsPage() {
           onEdit={handleEdit}
           onDelete={handleDelete}
           onDeposit={(chain) => setDepositChainId(chain.id)}
-          onManageAccounts={(chain) => setManagingChainId(chain.id)}
         />
       </div>
 
-      {/* Chain Form Modal */}
-      <ChainForm
-        isOpen={isFormOpen}
+      {/* Chain Edit Modal (Combined form + account management) */}
+      <ChainEditModal
+        isOpen={isEditModalOpen}
         onClose={() => {
-          setIsFormOpen(false);
-          setEditingChain(undefined);
+          setIsEditModalOpen(false);
+          setEditingChain(null);
+          setIsCreating(false);
         }}
-        onSubmit={editingChain ? handleUpdate : handleCreate}
-        chain={editingChain}
+        chain={liveEditingChain}
+        accounts={accountState.accounts}
+        onSave={handleSave}
+        onAddAccount={addAccountToChain}
+        onRemoveAccount={removeAccountFromChain}
+        onReorder={reorderChainAccounts}
+        onUpdateLimit={updateAccountLimitInChain}
+        onUpdatePercentage={updateAccountPercentageInChain}
+        onToggleBuffer={toggleBufferAccount}
+        onToggleDistributionMode={toggleDistributionMode}
+        isCreating={isCreating}
       />
 
       {/* Chain Deposit Modal */}
@@ -152,21 +166,6 @@ export default function ChainsPage() {
         chain={depositChain}
         accounts={accountState.accounts}
         onConfirmDeposit={handleChainDeposit}
-      />
-
-      {/* Manage Chain Accounts Modal */}
-      <ManageChainAccountsModal
-        isOpen={!!managingChainId}
-        onClose={() => setManagingChainId(null)}
-        chain={managingChain}
-        accounts={accountState.accounts}
-        onAddAccount={addAccountToChain}
-        onRemoveAccount={removeAccountFromChain}
-        onReorder={reorderChainAccounts}
-        onUpdateLimit={updateAccountLimitInChain}
-        onUpdatePercentage={updateAccountPercentageInChain}
-        onToggleBuffer={toggleBufferAccount}
-        onToggleDistributionMode={toggleDistributionMode}
       />
     </MainLayout>
   );

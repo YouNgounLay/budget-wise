@@ -40,6 +40,8 @@ export function createChain(data: CreateChainDTO): Chain {
     bufferAmount: 0,
     defaultLimit: data.defaultLimit ?? DEFAULT_LIMIT,
     distributionMode: 'sequential',
+    color: data.color || 'french-blue',
+    customColor: data.customColor,
     createdAt: timestamp,
     updatedAt: timestamp,
   };

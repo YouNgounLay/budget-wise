@@ -6,11 +6,13 @@
 import * as XLSX from 'xlsx';
 import { Account } from '@/app/types/account';
 import { Chain } from '@/app/types/chain';
+import { Tag } from '@/app/types/tag';
 import { getAllAccounts } from './accountService';
 import { getAllChains } from './chainService';
+import { getAllTags } from './tagService';
 
 const APP_NAME = 'BudgetWise';
-const EXPORT_VERSION = '1.0';
+const EXPORT_VERSION = '1.1';
 
 interface ExportData {
   metadata: {
@@ -19,9 +21,11 @@ interface ExportData {
     exportDate: string;
     accountCount: number;
     chainCount: number;
+    tagCount: number;
   };
   accounts: Account[];
   chains: Chain[];
+  tags: Tag[];
 }
 
 /**
@@ -30,6 +34,7 @@ interface ExportData {
 function gatherExportData(): ExportData {
   const accounts = getAllAccounts();
   const chains = getAllChains();
+  const tags = getAllTags();
   
   return {
     metadata: {
@@ -38,9 +43,11 @@ function gatherExportData(): ExportData {
       exportDate: new Date().toISOString(),
       accountCount: accounts.length,
       chainCount: chains.length,
+      tagCount: tags.length,
     },
     accounts,
     chains,
+    tags,
   };
 }
 
@@ -71,7 +78,7 @@ export function exportToJSON(): void {
 
 /**
  * Exports all data as an Excel spreadsheet
- * Creates multiple sheets: Accounts, Chains, Chain Accounts, and Metadata
+ * Creates multiple sheets: Accounts, Chains, Chain Accounts, Tags, and Metadata
  */
 export function exportToExcel(): void {
   const data = gatherExportData();
@@ -87,6 +94,7 @@ export function exportToExcel(): void {
     ['Export Date', data.metadata.exportDate],
     ['Total Accounts', data.metadata.accountCount],
     ['Total Chains', data.metadata.chainCount],
+    ['Total Tags', data.metadata.tagCount],
   ];
   const metadataSheet = XLSX.utils.aoa_to_sheet(metadataRows);
   metadataSheet['!cols'] = [{ wch: 20 }, { wch: 40 }];
@@ -99,8 +107,10 @@ export function exportToExcel(): void {
     'Description',
     'Amount',
     'Icon',
+    'Custom Emoji',
     'Color',
     'Custom Color',
+    'Tag IDs',
     'Created At',
     'Updated At',
   ];
@@ -110,8 +120,10 @@ export function exportToExcel(): void {
     account.description,
     account.amount,
     account.icon,
+    account.customEmoji || '',
     account.color,
     account.customColor || '',
+    (account.tagIds || []).join(','),
     account.createdAt,
     account.updatedAt,
   ]);
@@ -124,6 +136,8 @@ export function exportToExcel(): void {
     { wch: 15 },
     { wch: 15 },
     { wch: 15 },
+    { wch: 15 },
+    { wch: 30 },
     { wch: 25 },
     { wch: 25 },
   ];
@@ -138,6 +152,8 @@ export function exportToExcel(): void {
     'Has Buffer',
     'Buffer Amount',
     'Distribution Mode',
+    'Color',
+    'Custom Color',
     'Created At',
     'Updated At',
   ];
@@ -149,6 +165,8 @@ export function exportToExcel(): void {
     chain.hasBufferAccount ? 'true' : 'false',
     chain.bufferAmount || 0,
     chain.distributionMode || 'sequential',
+    chain.color || 'french-blue',
+    chain.customColor || '',
     chain.createdAt,
     chain.updatedAt,
   ]);
@@ -161,6 +179,8 @@ export function exportToExcel(): void {
     { wch: 12 },
     { wch: 15 },
     { wch: 18 },
+    { wch: 15 },
+    { wch: 15 },
     { wch: 25 },
     { wch: 25 },
   ];
@@ -186,6 +206,34 @@ export function exportToExcel(): void {
     { wch: 12 },
   ];
   XLSX.utils.book_append_sheet(workbook, chainAccountsSheet, 'Chain Accounts');
+
+  // Tags sheet
+  const tagHeaders = [
+    'ID',
+    'Name',
+    'Color',
+    'Custom Color',
+    'Created At',
+    'Updated At',
+  ];
+  const tagRows = data.tags.map((tag) => [
+    tag.id,
+    tag.name,
+    tag.color,
+    tag.customColor || '',
+    tag.createdAt,
+    tag.updatedAt,
+  ]);
+  const tagsSheet = XLSX.utils.aoa_to_sheet([tagHeaders, ...tagRows]);
+  tagsSheet['!cols'] = [
+    { wch: 15 },
+    { wch: 25 },
+    { wch: 15 },
+    { wch: 15 },
+    { wch: 25 },
+    { wch: 25 },
+  ];
+  XLSX.utils.book_append_sheet(workbook, tagsSheet, 'Tags');
 
   // Generate and download
   const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });

@@ -14,9 +14,11 @@ import {
   ACCOUNT_ICONS,
   ACCOUNT_COLORS,
 } from '@/app/types/account';
+import { Tag, CreateTagDTO } from '@/app/types/tag';
 import { Button, Input, Modal } from '@/app/components/shared';
 import { IconPicker } from './IconPicker';
 import { ColorPicker } from './ColorPicker';
+import { TagPicker } from '@/app/components/tag/TagPicker';
 
 interface AccountFormProps {
   isOpen: boolean;
@@ -24,6 +26,8 @@ interface AccountFormProps {
   onSubmit: (data: CreateAccountDTO) => void;
   account?: Account;
   title?: string;
+  availableTags?: Tag[];
+  onCreateTag?: (data: CreateTagDTO) => void;
 }
 
 const defaultFormData: CreateAccountDTO = {
@@ -34,6 +38,7 @@ const defaultFormData: CreateAccountDTO = {
   customEmoji: undefined,
   color: 'french-blue',
   customColor: '#4a86e8',
+  tagIds: [],
 };
 
 export function AccountForm({
@@ -42,6 +47,8 @@ export function AccountForm({
   onSubmit,
   account,
   title,
+  availableTags = [],
+  onCreateTag,
 }: AccountFormProps) {
   const [formData, setFormData] = useState<CreateAccountDTO>(defaultFormData);
   const [errors, setErrors] = useState<Partial<Record<keyof CreateAccountDTO, string>>>({});
@@ -58,6 +65,7 @@ export function AccountForm({
         customEmoji: account.customEmoji,
         color: account.color,
         customColor: account.customColor || '#4a86e8',
+        tagIds: account.tagIds || [],
       });
       setShowAppearance(false);
     } else if (!isOpen) {
@@ -203,6 +211,28 @@ export function AccountForm({
             </div>
           )}
         </div>
+
+        {/* Tags Section */}
+        {availableTags && onCreateTag && (
+          <TagPicker
+            label="Tags"
+            availableTags={availableTags}
+            selectedTagIds={formData.tagIds || []}
+            onAddTag={(tagId) => {
+              setFormData((prev) => ({
+                ...prev,
+                tagIds: [...(prev.tagIds || []), tagId],
+              }));
+            }}
+            onRemoveTag={(tagId) => {
+              setFormData((prev) => ({
+                ...prev,
+                tagIds: (prev.tagIds || []).filter((id) => id !== tagId),
+              }));
+            }}
+            onCreateTag={onCreateTag}
+          />
+        )}
 
         {/* Sticky footer for action buttons */}
         <div className="flex gap-3 pt-4 sticky bottom-0 bg-surface pb-1">

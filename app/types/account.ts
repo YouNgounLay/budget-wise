@@ -122,6 +122,7 @@ export interface Account {
   customEmoji?: string;
   color: AccountColor;
   customColor?: string;
+  tagIds: string[]; // Array of tag IDs associated with this account
   createdAt: string;
   updatedAt: string;
 }
@@ -134,6 +135,7 @@ export interface CreateAccountDTO {
   customEmoji?: string;
   color: AccountColor;
   customColor?: string;
+  tagIds?: string[];
 }
 
 export interface UpdateAccountDTO {
@@ -144,6 +146,7 @@ export interface UpdateAccountDTO {
   customEmoji?: string;
   color?: AccountColor;
   customColor?: string;
+  tagIds?: string[];
 }
 
 export const ACCOUNT_ICONS: Record<AccountIcon, string> = {

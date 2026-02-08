@@ -31,6 +31,11 @@ export function ChainDisplay({
   onManageAccounts,
   compact = false,
 }: ChainDisplayProps) {
+  // Get chain color
+  const chainColor = chain.color === 'custom' && chain.customColor
+    ? chain.customColor
+    : ACCOUNT_COLORS[chain.color] || ACCOUNT_COLORS['french-blue'];
+
   // Map chain accounts to full account data
   const chainAccounts = chain.accounts
     .map((ca) => {
@@ -42,7 +47,10 @@ export function ChainDisplay({
 
   if (compact) {
     return (
-      <div className="flex items-center gap-2 p-3 rounded-lg bg-surface border border-border">
+      <div 
+        className="flex items-center gap-2 p-3 rounded-lg bg-surface border border-border"
+        style={{ borderLeftColor: chainColor, borderLeftWidth: '4px' }}
+      >
         <div className="flex-1 min-w-0">
           <h4 className="font-medium text-foreground truncate">
             {chain.name}
@@ -57,6 +65,9 @@ export function ChainDisplay({
 
   return (
     <Card padding="none" className="overflow-hidden">
+      {/* Color banner */}
+      <div className="h-2" style={{ backgroundColor: chainColor }} />
+
       {/* Header */}
       <div className="p-4 border-b border-slate-200 dark:border-slate-700">
         <div className="flex items-start justify-between">
@@ -74,7 +85,7 @@ export function ChainDisplay({
             {onEdit && (
               <button
                 onClick={onEdit}
-                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                className="flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                 aria-label="Edit chain"
               >
                 <svg
@@ -90,12 +101,13 @@ export function ChainDisplay({
                     d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
                   />
                 </svg>
+                <span className="text-xs text-slate-500 font-medium">Edit</span>
               </button>
             )}
             {onDelete && (
               <button
                 onClick={onDelete}
-                className="p-1.5 rounded-lg hover:bg-rose-100 dark:hover:bg-rose-900/30 transition-colors"
+                className="flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-rose-100 dark:hover:bg-rose-900/30 transition-colors"
                 aria-label="Delete chain"
               >
                 <svg
@@ -111,6 +123,7 @@ export function ChainDisplay({
                     d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                   />
                 </svg>
+                <span className="text-xs text-rose-500 font-medium">Delete</span>
               </button>
             )}
           </div>
@@ -222,14 +235,6 @@ export function ChainDisplay({
             className="flex-1 px-3 py-2 text-sm font-medium rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 transition-colors"
           >
             Deposit to Chain
-          </button>
-        )}
-        {onManageAccounts && (
-          <button
-            onClick={onManageAccounts}
-            className="flex-1 px-3 py-2 text-sm font-medium rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 transition-colors"
-          >
-            Manage Accounts
           </button>
         )}
       </div>

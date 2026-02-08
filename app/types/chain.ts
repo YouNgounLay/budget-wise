@@ -3,6 +3,8 @@
  * Defines the structure for deposit/withdrawal chains
  */
 
+import { AccountColor } from './account';
+
 /**
  * Distribution mode for chain deposits
  * - sequential: Fills accounts left to right until limit is reached
@@ -25,6 +27,8 @@ export interface Chain {
   bufferAmount: number; // Amount stored in buffer (infinite capacity)
   defaultLimit: number;
   distributionMode: ChainDistributionMode; // Distribution mode toggle
+  color: AccountColor; // Chain card color
+  customColor?: string; // Custom color if color is 'custom'
   createdAt: string;
   updatedAt: string;
 }
@@ -33,12 +37,16 @@ export interface CreateChainDTO {
   name: string;
   description: string;
   defaultLimit?: number;
+  color?: AccountColor;
+  customColor?: string;
 }
 
 export interface UpdateChainDTO {
   name?: string;
   description?: string;
   defaultLimit?: number;
+  color?: AccountColor;
+  customColor?: string;
 }
 
 export interface DepositResult {

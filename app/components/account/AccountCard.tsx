@@ -7,11 +7,14 @@
 
 import React from 'react';
 import { Account, ACCOUNT_ICONS, ACCOUNT_COLORS } from '@/app/types/account';
+import { Tag } from '@/app/types/tag';
 import { formatCurrency } from '@/app/utils/helpers';
 import { Card } from '@/app/components/shared';
+import { TagBadge } from '@/app/components/tag/TagBadge';
 
 interface AccountCardProps {
   account: Account;
+  tags?: Tag[];
   onClick?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
@@ -22,6 +25,7 @@ interface AccountCardProps {
 
 export function AccountCard({
   account,
+  tags = [],
   onClick,
   onEdit,
   onDelete,
@@ -37,6 +41,9 @@ export function AccountCard({
   const color = account.color === 'custom' && account.customColor 
     ? account.customColor 
     : ACCOUNT_COLORS[account.color];
+
+  // Get tags for this account
+  const accountTags = tags.filter((t) => account.tagIds?.includes(t.id));
 
   if (compact) {
     return (
@@ -80,6 +87,14 @@ export function AccountCard({
               <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-1">
                 {account.description}
               </p>
+              {/* Tags */}
+              {accountTags.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {accountTags.map((tag) => (
+                    <TagBadge key={tag.id} tag={tag} size="sm" />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

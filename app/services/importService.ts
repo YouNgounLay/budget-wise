@@ -6,6 +6,7 @@
 import * as XLSX from 'xlsx';
 import { Account, AccountIcon, AccountColor } from '@/app/types/account';
 import { Chain, ChainAccountConfig } from '@/app/types/chain';
+import { Tag } from '@/app/types/tag';
 import { setToStorage, STORAGE_KEYS } from '@/app/utils/storage';
 import { ExportData } from './exportService';
 
@@ -14,6 +15,7 @@ export interface ImportResult {
   message: string;
   accountsImported: number;
   chainsImported: number;
+  tagsImported: number;
   errors: string[];
 }
 
@@ -69,6 +71,26 @@ function validateChain(chain: unknown, index: number): ValidationResult {
 }
 
 /**
+ * Validates tag data structure
+ */
+function validateTag(tag: unknown, index: number): ValidationResult {
+  const errors: string[] = [];
+  const t = tag as Record<string, unknown>;
+
+  if (!t.id || typeof t.id !== 'string') {
+    errors.push(`Tag ${index + 1}: Missing or invalid ID`);
+  }
+  if (!t.name || typeof t.name !== 'string') {
+    errors.push(`Tag ${index + 1}: Missing or invalid name`);
+  }
+  if (!t.color || typeof t.color !== 'string') {
+    errors.push(`Tag ${index + 1}: Missing or invalid color`);
+  }
+
+  return { isValid: errors.length === 0, errors };
+}
+
+/**
  * Validates the entire export data structure
  */
 function validateExportData(data: unknown): ValidationResult {
@@ -94,6 +116,13 @@ function validateExportData(data: unknown): ValidationResult {
       errors.push(...result.errors);
     });
   }
+  // Tags are optional for backward compatibility
+  if (exportData.tags && Array.isArray(exportData.tags)) {
+    exportData.tags.forEach((tag, index) => {
+      const result = validateTag(tag, index);
+      errors.push(...result.errors);
+    });
+  }
 
   return { isValid: errors.length === 0, errors };
 }
@@ -113,19 +142,36 @@ export async function importFromJSON(file: File): Promise<ImportResult> {
         message: 'Validation failed',
         accountsImported: 0,
         chainsImported: 0,
+        tagsImported: 0,
         errors: validation.errors,
       };
     }
 
+    // Ensure accounts have tagIds array (backward compatibility)
+    const accountsWithTags = data.accounts.map((acc) => ({
+      ...acc,
+      tagIds: acc.tagIds || [],
+    }));
+
+    // Ensure chains have color (backward compatibility)
+    const chainsWithColor = data.chains.map((chain) => ({
+      ...chain,
+      color: chain.color || 'french-blue',
+    }));
+
     // Save to storage
-    setToStorage(STORAGE_KEYS.ACCOUNTS, data.accounts);
-    setToStorage(STORAGE_KEYS.CHAINS, data.chains);
+    setToStorage(STORAGE_KEYS.ACCOUNTS, accountsWithTags);
+    setToStorage(STORAGE_KEYS.CHAINS, chainsWithColor);
+    if (data.tags) {
+      setToStorage(STORAGE_KEYS.TAGS, data.tags);
+    }
 
     return {
       success: true,
       message: 'Import successful',
       accountsImported: data.accounts.length,
       chainsImported: data.chains.length,
+      tagsImported: data.tags?.length || 0,
       errors: [],
     };
   } catch (error) {
@@ -134,6 +180,7 @@ export async function importFromJSON(file: File): Promise<ImportResult> {
       message: 'Failed to parse JSON file',
       accountsImported: 0,
       chainsImported: 0,
+      tagsImported: 0,
       errors: [error instanceof Error ? error.message : 'Unknown error'],
     };
   }
@@ -163,6 +210,7 @@ export async function importFromExcel(file: File): Promise<ImportResult> {
         message: 'Invalid Excel structure',
         accountsImported: 0,
         chainsImported: 0,
+        tagsImported: 0,
         errors,
       };
     }
@@ -179,6 +227,7 @@ export async function importFromExcel(file: File): Promise<ImportResult> {
       icon: String(row['Icon'] || 'money') as AccountIcon,
       color: String(row['Color'] || 'french-blue') as AccountColor,
       customColor: row['Custom Color'] ? String(row['Custom Color']) : undefined,
+      tagIds: row['Tag IDs'] ? String(row['Tag IDs']).split(',').map(id => id.trim()).filter(Boolean) : [],
       createdAt: String(row['Created At'] || new Date().toISOString()),
       updatedAt: String(row['Updated At'] || new Date().toISOString()),
     }));
@@ -221,10 +270,28 @@ export async function importFromExcel(file: File): Promise<ImportResult> {
         bufferAmount: Number(row['Buffer Amount']) || 0,
         accounts: chainAccountsMap.get(chainId) || [],
         distributionMode: distributionMode as 'sequential' | 'percentage',
+        color: (String(row['Color'] || 'french-blue')) as AccountColor,
+        customColor: row['Custom Color'] ? String(row['Custom Color']) : undefined,
         createdAt: String(row['Created At'] || new Date().toISOString()),
         updatedAt: String(row['Updated At'] || new Date().toISOString()),
       };
     });
+
+    // Parse Tags sheet if exists
+    let tags: Tag[] = [];
+    if (workbook.SheetNames.includes('Tags')) {
+      const tagsSheet = workbook.Sheets['Tags'];
+      const tagsRaw = XLSX.utils.sheet_to_json<Record<string, unknown>>(tagsSheet);
+      
+      tags = tagsRaw.map((row) => ({
+        id: String(row['ID'] || ''),
+        name: String(row['Name'] || ''),
+        color: (String(row['Color'] || 'french-blue')) as AccountColor,
+        customColor: row['Custom Color'] ? String(row['Custom Color']) : undefined,
+        createdAt: String(row['Created At'] || new Date().toISOString()),
+        updatedAt: String(row['Updated At'] || new Date().toISOString()),
+      }));
+    }
 
     // Validate imported data
     accounts.forEach((account, index) => {
@@ -235,6 +302,10 @@ export async function importFromExcel(file: File): Promise<ImportResult> {
       const result = validateChain(chain, index);
       errors.push(...result.errors);
     });
+    tags.forEach((tag, index) => {
+      const result = validateTag(tag, index);
+      errors.push(...result.errors);
+    });
 
     if (errors.length > 0) {
       return {
@@ -242,6 +313,7 @@ export async function importFromExcel(file: File): Promise<ImportResult> {
         message: 'Validation failed',
         accountsImported: 0,
         chainsImported: 0,
+        tagsImported: 0,
         errors,
       };
     }
@@ -249,12 +321,16 @@ export async function importFromExcel(file: File): Promise<ImportResult> {
     // Save to storage
     setToStorage(STORAGE_KEYS.ACCOUNTS, accounts);
     setToStorage(STORAGE_KEYS.CHAINS, chains);
+    if (tags.length > 0) {
+      setToStorage(STORAGE_KEYS.TAGS, tags);
+    }
 
     return {
       success: true,
       message: 'Import successful',
       accountsImported: accounts.length,
       chainsImported: chains.length,
+      tagsImported: tags.length,
       errors: [],
     };
   } catch (error) {
@@ -263,6 +339,7 @@ export async function importFromExcel(file: File): Promise<ImportResult> {
       message: 'Failed to parse Excel file',
       accountsImported: 0,
       chainsImported: 0,
+      tagsImported: 0,
       errors: [error instanceof Error ? error.message : 'Unknown error'],
     };
   }
@@ -284,6 +361,7 @@ export async function importFromFile(file: File): Promise<ImportResult> {
       message: 'Unsupported file type',
       accountsImported: 0,
       chainsImported: 0,
+      tagsImported: 0,
       errors: ['Please upload a .json or .xlsx file'],
     };
   }

@@ -137,8 +137,10 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       description: data.description,
       amount: data.amount,
       icon: data.icon,
+      customEmoji: data.customEmoji,
       color: data.color,
       customColor: data.customColor,
+      tagIds: data.tagIds || [],
       createdAt: timestamp,
       updatedAt: timestamp,
     };

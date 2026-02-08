@@ -13,3 +13,4 @@ Please follow these rules when implementing new features:
 12. Reuse existing system functionalities if possible.
 13. You may go through the docs folder to learn about the implementation of the projects so far.
 14. Remember the rulesets for future implementation for this project.
+15. Please also update the import/export system accordingly. 

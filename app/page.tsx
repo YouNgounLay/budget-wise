@@ -15,9 +15,8 @@ import {
 } from './components/account';
 import {
   ChainList,
-  ChainForm,
   ChainDepositModal,
-  ManageChainAccountsModal,
+  ChainEditModal,
 } from './components/chain';
 import { useAccounts } from './context/AccountContext';
 import { useChains } from './context/ChainContext';
@@ -38,14 +37,12 @@ export default function Dashboard() {
   const [transactionType, setTransactionType] = useState<'deposit' | 'withdraw'>('deposit');
 
   // Chain modals
-  const [isChainFormOpen, setIsChainFormOpen] = useState(false);
+  const [isChainModalOpen, setIsChainModalOpen] = useState(false);
   const [editingChain, setEditingChain] = useState<Chain | undefined>();
   const [depositChainId, setDepositChainId] = useState<string | null>(null);
-  const [managingChainId, setManagingChainId] = useState<string | null>(null);
 
   // Get live chain data from state
   const depositChain = depositChainId ? chainState.chains.find(c => c.id === depositChainId) || null : null;
-  const managingChain = managingChainId ? chainState.chains.find(c => c.id === managingChainId) || null : null;
 
   // Calculate totals
   const totalBalance = accountState.accounts.reduce((sum, acc) => sum + acc.amount, 0);
@@ -98,12 +95,12 @@ export default function Dashboard() {
   // Chain handlers
   const handleCreateChain = (data: CreateChainDTO) => {
     createChain(data);
-    setIsChainFormOpen(false);
+    setIsChainModalOpen(false);
   };
 
   const handleEditChain = (chain: Chain) => {
     setEditingChain(chain);
-    setIsChainFormOpen(true);
+    setIsChainModalOpen(true);
   };
 
   const handleUpdateChain = (data: CreateChainDTO) => {
@@ -111,7 +108,12 @@ export default function Dashboard() {
       updateChain(editingChain.id, data);
     }
     setEditingChain(undefined);
-    setIsChainFormOpen(false);
+    setIsChainModalOpen(false);
+  };
+
+  const handleCloseChainModal = () => {
+    setIsChainModalOpen(false);
+    setEditingChain(undefined);
   };
 
   const handleDeleteChain = (chain: Chain) => {
@@ -200,7 +202,7 @@ export default function Dashboard() {
             <h2 className="text-xl font-semibold text-jet-black dark:text-white">
               Deposit Chains
             </h2>
-            <Button onClick={() => setIsChainFormOpen(true)}>
+            <Button onClick={() => setIsChainModalOpen(true)}>
               + New Chain
             </Button>
           </div>
@@ -210,7 +212,6 @@ export default function Dashboard() {
             onEdit={handleEditChain}
             onDelete={handleDeleteChain}
             onDeposit={(chain) => setDepositChainId(chain.id)}
-            onManageAccounts={(chain) => setManagingChainId(chain.id)}
           />
         </section>
       </div>
@@ -235,15 +236,21 @@ export default function Dashboard() {
         onSubmit={handleTransaction}
       />
 
-      {/* Chain Form Modal */}
-      <ChainForm
-        isOpen={isChainFormOpen}
-        onClose={() => {
-          setIsChainFormOpen(false);
-          setEditingChain(undefined);
-        }}
-        onSubmit={editingChain ? handleUpdateChain : handleCreateChain}
-        chain={editingChain}
+      {/* Chain Edit Modal (combined form and account management) */}
+      <ChainEditModal
+        isOpen={isChainModalOpen}
+        onClose={handleCloseChainModal}
+        onSave={editingChain ? handleUpdateChain : handleCreateChain}
+        chain={editingChain ?? null}
+        accounts={accountState.accounts}
+        onAddAccount={addAccountToChain}
+        onRemoveAccount={removeAccountFromChain}
+        onReorder={reorderChainAccounts}
+        onUpdateLimit={updateAccountLimitInChain}
+        onUpdatePercentage={updateAccountPercentageInChain}
+        onToggleBuffer={toggleBufferAccount}
+        onToggleDistributionMode={toggleDistributionMode}
+        isCreating={!editingChain}
       />
 
       {/* Chain Deposit Modal */}
@@ -253,21 +260,6 @@ export default function Dashboard() {
         chain={depositChain}
         accounts={accountState.accounts}
         onConfirmDeposit={handleChainDeposit}
-      />
-
-      {/* Manage Chain Accounts Modal */}
-      <ManageChainAccountsModal
-        isOpen={!!managingChainId}
-        onClose={() => setManagingChainId(null)}
-        chain={managingChain}
-        accounts={accountState.accounts}
-        onAddAccount={addAccountToChain}
-        onRemoveAccount={removeAccountFromChain}
-        onReorder={reorderChainAccounts}
-        onUpdateLimit={updateAccountLimitInChain}
-        onUpdatePercentage={updateAccountPercentageInChain}
-        onToggleBuffer={toggleBufferAccount}
-        onToggleDistributionMode={toggleDistributionMode}
       />
     </MainLayout>
   );

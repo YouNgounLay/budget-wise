@@ -8,3 +8,4 @@ export { ChainForm } from './ChainForm';
 export { ChainList } from './ChainList';
 export { ChainDepositModal } from './ChainDepositModal';
 export { ManageChainAccountsModal } from './ManageChainAccountsModal';
+export { ChainEditModal } from './ChainEditModal';

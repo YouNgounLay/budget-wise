@@ -36,7 +36,8 @@ export function createChain(data: CreateChainDTO): Chain {
     name: data.name,
     description: data.description,
     accounts: [],
-    overflowAccountId: null,
+    hasBufferAccount: false,
+    bufferAmount: 0,
     defaultLimit: data.defaultLimit ?? DEFAULT_LIMIT,
     distributionMode: 'sequential',
     createdAt: timestamp,
@@ -98,8 +99,7 @@ export function addAccountToChain(
   const accountExists = chain.accounts.some(
     (acc) => acc.accountId === accountId
   );
-  // Also check if it's the overflow account
-  if (accountExists || chain.overflowAccountId === accountId) return null;
+  if (accountExists) return null;
 
   const newAccountConfig: ChainAccountConfig = {
     accountId,
@@ -203,33 +203,81 @@ function updateChainAccounts(
 }
 
 /**
- * Sets or removes the overflow account for a chain
+ * Toggles the buffer account for a chain
  */
-export function setOverflowAccount(
+export function toggleBufferAccount(chainId: string): Chain | null {
+  const chains = getAllChains();
+  const index = chains.findIndex((chain) => chain.id === chainId);
+
+  if (index === -1) return null;
+
+  const chain = chains[index];
+  
+  // Can only disable buffer if it has no funds
+  if (chain.hasBufferAccount && chain.bufferAmount > 0) {
+    return null; // Cannot disable buffer with funds in it
+  }
+
+  chains[index] = {
+    ...chain,
+    hasBufferAccount: !chain.hasBufferAccount,
+    updatedAt: getCurrentTimestamp(),
+  };
+
+  setToStorage(STORAGE_KEYS.CHAINS, chains);
+  return chains[index];
+}
+
+/**
+ * Updates the buffer amount for a chain (used after deposits)
+ */
+export function updateBufferAmount(
   chainId: string,
-  accountId: string | null
+  newAmount: number
 ): Chain | null {
   const chains = getAllChains();
   const index = chains.findIndex((chain) => chain.id === chainId);
 
   if (index === -1) return null;
 
-  // If setting an account, ensure it's not already in the chain's regular accounts
-  if (accountId) {
-    const accountInChain = chains[index].accounts.some(
-      (acc) => acc.accountId === accountId
-    );
-    if (accountInChain) return null;
-  }
+  // Auto-enable buffer if receiving funds
+  const shouldEnableBuffer = newAmount > 0;
 
   chains[index] = {
     ...chains[index],
-    overflowAccountId: accountId,
+    bufferAmount: newAmount,
+    hasBufferAccount: shouldEnableBuffer || chains[index].hasBufferAccount,
     updatedAt: getCurrentTimestamp(),
   };
 
   setToStorage(STORAGE_KEYS.CHAINS, chains);
   return chains[index];
+}
+
+/**
+ * Withdraws from buffer account
+ */
+export function withdrawFromBuffer(
+  chainId: string,
+  amount: number
+): { success: boolean; chain: Chain | null; withdrawnAmount: number } {
+  const chains = getAllChains();
+  const index = chains.findIndex((chain) => chain.id === chainId);
+
+  if (index === -1) return { success: false, chain: null, withdrawnAmount: 0 };
+
+  const chain = chains[index];
+  const withdrawnAmount = Math.min(amount, chain.bufferAmount);
+  const newBufferAmount = chain.bufferAmount - withdrawnAmount;
+
+  chains[index] = {
+    ...chain,
+    bufferAmount: newBufferAmount,
+    updatedAt: getCurrentTimestamp(),
+  };
+
+  setToStorage(STORAGE_KEYS.CHAINS, chains);
+  return { success: true, chain: chains[index], withdrawnAmount };
 }
 
 /**

@@ -21,6 +21,7 @@ export function depositToChain(
   if (!chain) {
     return {
       success: false,
+      chainId,
       deposits: [],
       remainingAmount: amount,
       message: 'Chain not found',
@@ -47,6 +48,7 @@ export function depositToChainByPercentage(
   if (amount <= 0) {
     return {
       success: false,
+      chainId: chain.id,
       deposits: [],
       remainingAmount: amount,
       message: 'Deposit amount must be greater than 0',
@@ -56,6 +58,7 @@ export function depositToChainByPercentage(
   if (chain.accounts.length === 0) {
     return {
       success: false,
+      chainId: chain.id,
       deposits: [],
       remainingAmount: amount,
       message: 'Chain has no accounts',
@@ -71,6 +74,7 @@ export function depositToChainByPercentage(
   if (totalPercentage !== 100) {
     return {
       success: false,
+      chainId: chain.id,
       deposits: [],
       remainingAmount: amount,
       message: `Account percentages must sum to 100% (current: ${totalPercentage}%)`,
@@ -112,6 +116,7 @@ export function depositToChainByPercentage(
 
   return {
     success: true,
+    chainId: chain.id,
     deposits,
     remainingAmount: 0,
     message: `Successfully distributed ${formatMoney(totalDeposited)} by percentage across ${deposits.length} account(s).`,
@@ -130,6 +135,7 @@ export function depositToChainSequential(
   if (amount <= 0) {
     return {
       success: false,
+      chainId: chain.id,
       deposits: [],
       remainingAmount: amount,
       message: 'Deposit amount must be greater than 0',
@@ -139,6 +145,7 @@ export function depositToChainSequential(
   if (chain.accounts.length === 0) {
     return {
       success: false,
+      chainId: chain.id,
       deposits: [],
       remainingAmount: amount,
       message: 'Chain has no accounts',
@@ -174,26 +181,24 @@ export function depositToChainSequential(
     }
   }
 
-  // If there's remaining amount and an overflow account exists, deposit the rest there
-  if (remainingAmount > 0 && chain.overflowAccountId) {
-    const overflowAccount = accounts.find((a) => a.id === chain.overflowAccountId);
-    if (overflowAccount) {
-      const newBalance = overflowAccount.amount + remainingAmount;
-      deposits.push({
-        accountId: overflowAccount.id,
-        accountName: overflowAccount.name,
-        amount: remainingAmount,
-        newBalance,
-      });
-      remainingAmount = 0;
-    }
+  // If there's remaining amount, handle buffer account
+  let bufferDeposit: DepositResult['bufferDeposit'] | undefined;
+  if (remainingAmount > 0) {
+    // Auto-enable buffer if there's overflow
+    const newBufferBalance = (chain.bufferAmount || 0) + remainingAmount;
+    bufferDeposit = {
+      amount: remainingAmount,
+      newBufferBalance,
+    };
+    remainingAmount = 0;
   }
 
   const totalDeposited = amount - remainingAmount;
 
-  if (totalDeposited === 0) {
+  if (totalDeposited === 0 && !bufferDeposit) {
     return {
       success: false,
+      chainId: chain.id,
       deposits: [],
       remainingAmount: amount,
       message: 'All accounts in the chain have reached their limits',
@@ -202,12 +207,13 @@ export function depositToChainSequential(
 
   return {
     success: true,
+    chainId: chain.id,
     deposits,
+    bufferDeposit,
     remainingAmount,
-    message:
-      remainingAmount > 0
-        ? `Deposited ${formatMoney(totalDeposited)}. ${formatMoney(remainingAmount)} remaining (all limits reached).`
-        : `Successfully deposited ${formatMoney(totalDeposited)} across ${deposits.length} account(s).`,
+    message: bufferDeposit
+      ? `Deposited ${formatMoney(amount - bufferDeposit.amount)} to accounts, ${formatMoney(bufferDeposit.amount)} to buffer.`
+      : `Successfully deposited ${formatMoney(totalDeposited)} across ${deposits.length} account(s).`,
   };
 }
 
@@ -245,6 +251,7 @@ export function withdrawFromChain(
   if (amount <= 0) {
     return {
       success: false,
+      chainId,
       deposits: [],
       remainingAmount: amount,
       message: 'Withdrawal amount must be greater than 0',
@@ -255,6 +262,7 @@ export function withdrawFromChain(
   if (!chain) {
     return {
       success: false,
+      chainId,
       deposits: [],
       remainingAmount: amount,
       message: 'Chain not found',
@@ -264,6 +272,7 @@ export function withdrawFromChain(
   if (chain.accounts.length === 0) {
     return {
       success: false,
+      chainId: chain.id,
       deposits: [],
       remainingAmount: amount,
       message: 'Chain has no accounts',
@@ -300,6 +309,7 @@ export function withdrawFromChain(
   if (totalWithdrawn === 0) {
     return {
       success: false,
+      chainId: chain.id,
       deposits: [],
       remainingAmount: amount,
       message: 'No funds available in chain accounts',
@@ -308,6 +318,7 @@ export function withdrawFromChain(
 
   return {
     success: true,
+    chainId: chain.id,
     deposits: withdrawals,
     remainingAmount,
     message:

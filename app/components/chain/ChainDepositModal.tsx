@@ -125,6 +125,23 @@ export function ChainDepositModal({
                     </div>
                   );
                 })}
+                {/* Buffer Account Display */}
+                {chain.distributionMode === 'sequential' && (
+                  <div className="flex items-center gap-2 text-sm pt-2 border-t border-slate-200 dark:border-slate-600 mt-2">
+                    <span className="text-emerald-500">∞</span>
+                    <span>🏦</span>
+                    <span className="text-jet-black dark:text-white">
+                      Buffer Account
+                    </span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      chain.hasBufferAccount 
+                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' 
+                        : 'bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
+                    }`}>
+                      {chain.hasBufferAccount ? `Active (${formatCurrency(chain.bufferAmount)})` : 'Auto-enable on overflow'}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -180,10 +197,29 @@ export function ChainDepositModal({
                     </div>
                   </div>
                 ))}
+                {/* Buffer Deposit Display */}
+                {preview.bufferDeposit && preview.bufferDeposit.amount > 0 && (
+                  <div className="flex items-center justify-between p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border-2 border-dashed border-emerald-300 dark:border-emerald-700">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">🏦</span>
+                      <span className="text-jet-black dark:text-white font-medium">
+                        Buffer Account
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-emerald-600 font-medium">
+                        +{formatCurrency(preview.bufferDeposit.amount)}
+                      </span>
+                      <span className="text-slate-500 text-sm block">
+                        New balance: {formatCurrency(preview.bufferDeposit.newBufferBalance)}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
-            {preview.remainingAmount > 0 && (
+            {preview.remainingAmount > 0 && !preview.bufferDeposit && (
               <p className="text-sm text-amber-600 dark:text-amber-400">
                 ⚠️ {formatCurrency(preview.remainingAmount)} could not be deposited
                 (all accounts reached their limits)

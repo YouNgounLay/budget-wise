@@ -31,7 +31,8 @@ export default function ChainsPage() {
     reorderChainAccounts,
     updateAccountLimitInChain,
     updateAccountPercentageInChain,
-    setOverflowAccount,
+    toggleBufferAccount,
+    updateBufferAmount,
     toggleDistributionMode,
   } = useChains();
 
@@ -77,6 +78,11 @@ export default function ChainsPage() {
   const handleChainDeposit = (result: DepositResult) => {
     const updatedAccounts = applyDeposits(result.deposits, accountState.accounts);
     updateAccountsFromDeposit(updatedAccounts);
+    
+    // Update buffer amount if there was buffer deposit
+    if (result.bufferDeposit && depositChainId) {
+      updateBufferAmount(depositChainId, result.bufferDeposit.newBufferBalance);
+    }
   };
 
   if (chainState.isLoading || accountState.isLoading) {
@@ -159,7 +165,7 @@ export default function ChainsPage() {
         onReorder={reorderChainAccounts}
         onUpdateLimit={updateAccountLimitInChain}
         onUpdatePercentage={updateAccountPercentageInChain}
-        onSetOverflowAccount={setOverflowAccount}
+        onToggleBuffer={toggleBufferAccount}
         onToggleDistributionMode={toggleDistributionMode}
       />
     </MainLayout>

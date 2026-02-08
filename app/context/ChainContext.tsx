@@ -69,7 +69,8 @@ interface ChainContextType {
     accountId: string,
     newPercentage: number
   ) => Chain | null;
-  setOverflowAccount: (chainId: string, accountId: string | null) => Chain | null;
+  toggleBufferAccount: (chainId: string) => Chain | null;
+  updateBufferAmount: (chainId: string, newAmount: number) => Chain | null;
   toggleDistributionMode: (chainId: string) => Chain | null;
   setDistributionMode: (chainId: string, mode: ChainDistributionMode) => Chain | null;
 }
@@ -151,7 +152,8 @@ export function ChainProvider({ children }: { children: ReactNode }) {
       name: data.name,
       description: data.description,
       accounts: [],
-      overflowAccountId: null,
+      hasBufferAccount: false,
+      bufferAmount: 0,
       defaultLimit: data.defaultLimit ?? DEFAULT_LIMIT,
       distributionMode: 'sequential',
       createdAt: timestamp,
@@ -195,11 +197,8 @@ export function ChainProvider({ children }: { children: ReactNode }) {
     const chain = state.chains.find((c) => c.id === chainId);
     if (!chain) return null;
 
-    // Check if account already exists or is the overflow account
-    if (
-      chain.accounts.some((acc) => acc.accountId === accountId) ||
-      chain.overflowAccountId === accountId
-    ) {
+    // Check if account already exists
+    if (chain.accounts.some((acc) => acc.accountId === accountId)) {
       return null;
     }
 
@@ -295,21 +294,39 @@ export function ChainProvider({ children }: { children: ReactNode }) {
     return updatedChain;
   }, [state.chains]);
 
-  const setOverflowAccount = useCallback((
-    chainId: string,
-    accountId: string | null
-  ): Chain | null => {
+  const toggleBufferAccount = useCallback((chainId: string): Chain | null => {
     const chain = state.chains.find((c) => c.id === chainId);
     if (!chain) return null;
 
-    // If setting an account, ensure it's not already in the chain's regular accounts
-    if (accountId && chain.accounts.some((acc) => acc.accountId === accountId)) {
-      return null;
+    // Can only disable buffer if it has no funds
+    if (chain.hasBufferAccount && chain.bufferAmount > 0) {
+      return null; // Cannot disable buffer with funds in it
     }
 
     const updatedChain: Chain = {
       ...chain,
-      overflowAccountId: accountId,
+      hasBufferAccount: !chain.hasBufferAccount,
+      updatedAt: getCurrentTimestamp(),
+    };
+
+    dispatch({ type: 'UPDATE_CHAIN', payload: updatedChain });
+    return updatedChain;
+  }, [state.chains]);
+
+  const updateBufferAmount = useCallback((
+    chainId: string,
+    newAmount: number
+  ): Chain | null => {
+    const chain = state.chains.find((c) => c.id === chainId);
+    if (!chain) return null;
+
+    // Auto-enable buffer if receiving funds
+    const shouldEnableBuffer = newAmount > 0;
+
+    const updatedChain: Chain = {
+      ...chain,
+      bufferAmount: newAmount,
+      hasBufferAccount: shouldEnableBuffer || chain.hasBufferAccount,
       updatedAt: getCurrentTimestamp(),
     };
 
@@ -384,7 +401,8 @@ export function ChainProvider({ children }: { children: ReactNode }) {
     reorderChainAccounts,
     updateAccountLimitInChain,
     updateAccountPercentageInChain,
-    setOverflowAccount,
+    toggleBufferAccount,
+    updateBufferAmount,
     toggleDistributionMode,
     setDistributionMode,
   }), [
@@ -398,7 +416,8 @@ export function ChainProvider({ children }: { children: ReactNode }) {
     reorderChainAccounts,
     updateAccountLimitInChain,
     updateAccountPercentageInChain,
-    setOverflowAccount,
+    toggleBufferAccount,
+    updateBufferAmount,
     toggleDistributionMode,
     setDistributionMode,
   ]);

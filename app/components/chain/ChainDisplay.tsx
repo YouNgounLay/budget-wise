@@ -40,11 +40,6 @@ export function ChainDisplay({
     .filter(Boolean) as (Account & { limit: number })[];
   console.log(chainAccounts);
 
-  // Get overflow account if set
-  const overflowAccount = chain.overflowAccountId
-    ? accounts.find((a) => a.id === chain.overflowAccountId)
-    : null;
-
   if (compact) {
     return (
       <div className="flex items-center gap-2 p-3 rounded-lg bg-surface border border-border">
@@ -177,10 +172,10 @@ export function ChainDisplay({
               </React.Fragment>
             ))}
 
-            {/* Overflow account (no limit) */}
-            {overflowAccount && (
+            {/* Buffer account (virtual, infinite capacity) */}
+            {chain.hasBufferAccount && (
               <>
-                {/* Arrow to overflow */}
+                {/* Arrow to buffer */}
                 {chainAccounts.length > 0 && (
                   <svg
                     className="w-6 h-6 text-slate-400 flex-shrink-0"
@@ -196,23 +191,20 @@ export function ChainDisplay({
                     />
                   </svg>
                 )}
-                {/* Overflow account chip */}
+                {/* Buffer account chip */}
                 <div
                   className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/30 dark:to-teal-900/30 border-2 border-dashed border-emerald-400 dark:border-emerald-600"
-                  style={{
-                    borderLeft: `3px solid ${ACCOUNT_COLORS[overflowAccount.color]}`,
-                  }}
                 >
-                  <span className="text-xl">{overflowAccount.icon === 'custom' && overflowAccount.customEmoji ? overflowAccount.customEmoji : ACCOUNT_ICONS[overflowAccount.icon]}</span>
+                  <span className="text-xl">🏦</span>
                   <div className="text-sm">
                     <p className="font-medium text-jet-black dark:text-white flex items-center gap-1">
-                      {overflowAccount.name}
+                      Buffer
                       <span className="text-xs px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-300">
                         ∞
                       </span>
                     </p>
                     <p className="text-slate-500 dark:text-slate-400">
-                      {formatCurrency(overflowAccount.amount)} <span className="text-emerald-600 dark:text-emerald-400">· No limit</span>
+                      {formatCurrency(chain.bufferAmount)} <span className="text-emerald-600 dark:text-emerald-400">· No limit</span>
                     </p>
                   </div>
                 </div>

@@ -29,7 +29,7 @@ import { formatCurrency } from './utils/helpers';
 
 export default function Dashboard() {
   const { state: accountState, createAccount, updateAccount, deleteAccount, depositToAccount, withdrawFromAccount, updateAccountsFromDeposit } = useAccounts();
-  const { state: chainState, createChain, updateChain, deleteChain, addAccountToChain, removeAccountFromChain, reorderChainAccounts, updateAccountLimitInChain, updateAccountPercentageInChain, setOverflowAccount, toggleDistributionMode } = useChains();
+  const { state: chainState, createChain, updateChain, deleteChain, addAccountToChain, removeAccountFromChain, reorderChainAccounts, updateAccountLimitInChain, updateAccountPercentageInChain, toggleBufferAccount, updateBufferAmount, toggleDistributionMode } = useChains();
 
   // Account modals
   const [isAccountFormOpen, setIsAccountFormOpen] = useState(false);
@@ -123,6 +123,11 @@ export default function Dashboard() {
   const handleChainDeposit = (result: DepositResult) => {
     const updatedAccounts = applyDeposits(result.deposits, accountState.accounts);
     updateAccountsFromDeposit(updatedAccounts);
+    
+    // Update buffer amount if there was a buffer deposit
+    if (result.bufferDeposit) {
+      updateBufferAmount(result.chainId, result.bufferDeposit.newBufferBalance);
+    }
   };
 
   if (accountState.isLoading || chainState.isLoading) {
@@ -261,7 +266,7 @@ export default function Dashboard() {
         onReorder={reorderChainAccounts}
         onUpdateLimit={updateAccountLimitInChain}
         onUpdatePercentage={updateAccountPercentageInChain}
-        onSetOverflowAccount={setOverflowAccount}
+        onToggleBuffer={toggleBufferAccount}
         onToggleDistributionMode={toggleDistributionMode}
       />
     </MainLayout>

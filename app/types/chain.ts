@@ -21,9 +21,10 @@ export interface Chain {
   name: string;
   description: string;
   accounts: ChainAccountConfig[];
-  overflowAccountId: string | null; // Account with no limit at the end of chain
+  hasBufferAccount: boolean; // Toggle for buffer account at end of chain
+  bufferAmount: number; // Amount stored in buffer (infinite capacity)
   defaultLimit: number;
-  distributionMode: ChainDistributionMode; // NEW: Distribution mode toggle
+  distributionMode: ChainDistributionMode; // Distribution mode toggle
   createdAt: string;
   updatedAt: string;
 }
@@ -42,12 +43,17 @@ export interface UpdateChainDTO {
 
 export interface DepositResult {
   success: boolean;
+  chainId: string;
   deposits: {
     accountId: string;
     accountName: string;
     amount: number;
     newBalance: number;
   }[];
+  bufferDeposit?: {
+    amount: number;
+    newBufferBalance: number;
+  };
   remainingAmount: number;
   message: string;
 }

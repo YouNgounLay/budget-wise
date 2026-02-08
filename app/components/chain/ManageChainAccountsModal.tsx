@@ -21,7 +21,7 @@ interface ManageChainAccountsModalProps {
   onReorder: (chainId: string, newOrder: string[]) => void;
   onUpdateLimit: (chainId: string, accountId: string, newLimit: number) => void;
   onUpdatePercentage: (chainId: string, accountId: string, newPercentage: number) => void;
-  onSetOverflowAccount: (chainId: string, accountId: string | null) => void;
+  onToggleBuffer: (chainId: string) => void;
   onToggleDistributionMode: (chainId: string) => void;
 }
 
@@ -35,7 +35,7 @@ export function ManageChainAccountsModal({
   onReorder,
   onUpdateLimit,
   onUpdatePercentage,
-  onSetOverflowAccount,
+  onToggleBuffer,
   onToggleDistributionMode,
 }: ManageChainAccountsModalProps) {
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
@@ -75,22 +75,8 @@ export function ManageChainAccountsModal({
   );
 
   const availableAccounts = useMemo(() => 
-    accounts.filter(
-      (a) => !chainAccountIds.has(a.id) && a.id !== chain?.overflowAccountId
-    ),
-    [accounts, chainAccountIds, chain?.overflowAccountId]
-  );
-
-  const availableForOverflow = useMemo(() => 
     accounts.filter((a) => !chainAccountIds.has(a.id)),
     [accounts, chainAccountIds]
-  );
-
-  const overflowAccount = useMemo(() => 
-    chain?.overflowAccountId
-      ? accounts.find((a) => a.id === chain.overflowAccountId)
-      : null,
-    [accounts, chain?.overflowAccountId]
   );
 
   const chainAccountsWithData = useMemo(() => 
@@ -152,6 +138,14 @@ export function ManageChainAccountsModal({
     if (!chain) return;
     onToggleDistributionMode(chain.id);
   }, [chain, onToggleDistributionMode]);
+
+  const handleToggleBuffer = useCallback(() => {
+    if (!chain) return;
+    onToggleBuffer(chain.id);
+  }, [chain, onToggleBuffer]);
+
+  // Check if buffer can be disabled
+  const canDisableBuffer = chain?.bufferAmount === 0;
 
   if (!isOpen || !chain) return null;
 
@@ -433,53 +427,55 @@ export function ManageChainAccountsModal({
           )}
         </div>
 
-        {/* Overflow Account Section - Only show in sequential mode */}
+        {/* Buffer Account Section - Only show in sequential mode */}
         {!isPercentageMode && (
         <div className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-lg border-2 border-dashed border-emerald-300 dark:border-emerald-700">
-          <h4 className="font-medium text-jet-black dark:text-white mb-3 flex items-center gap-2">
-            <span className="text-lg">∞</span>
-            Overflow Account (No Limit)
-          </h4>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-            Any remaining funds after all accounts reach their limits will go here.
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-medium text-jet-black dark:text-white flex items-center gap-2">
+                <span className="text-lg">∞</span>
+                Buffer Account
+              </h4>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                Stores overflow funds when all accounts reach their limits
+              </p>
+            </div>
+            <button
+              onClick={handleToggleBuffer}
+              disabled={chain.hasBufferAccount && !canDisableBuffer}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                chain.hasBufferAccount
+                  ? 'bg-emerald-500'
+                  : 'bg-slate-300 dark:bg-slate-600'
+              } ${chain.hasBufferAccount && !canDisableBuffer ? 'opacity-60 cursor-not-allowed' : ''}`}
+              title={chain.hasBufferAccount && !canDisableBuffer ? 'Cannot disable while buffer has funds' : ''}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  chain.hasBufferAccount ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
           
-          {overflowAccount ? (
-            <div className="flex items-center justify-between p-3 bg-surface rounded-lg border border-emerald-200 dark:border-emerald-700">
-              <div className="flex items-center gap-3">
-                <span className="text-xl">{overflowAccount.icon === 'custom' && overflowAccount.customEmoji ? overflowAccount.customEmoji : ACCOUNT_ICONS[overflowAccount.icon]}</span>
-                <div>
-                  <p className="font-medium text-foreground">
-                    {overflowAccount.name}
+          {chain.hasBufferAccount && (
+            <div className="mt-3 p-3 bg-surface rounded-lg border border-emerald-200 dark:border-emerald-700">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">🏦</span>
+                  <span className="font-medium text-foreground">Chain Buffer</span>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">
+                    {formatCurrency(chain.bufferAmount)}
                   </p>
-                  <p className="text-sm text-emerald-600 dark:text-emerald-400">
-                    Balance: {formatCurrency(overflowAccount.amount)}
-                  </p>
+                  {chain.bufferAmount > 0 && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                      Cannot disable until emptied
+                    </p>
+                  )}
                 </div>
               </div>
-              <button
-                onClick={() => onSetOverflowAccount(chain.id, null)}
-                className="px-3 py-1.5 text-sm text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-900/30 rounded-lg transition-colors"
-              >
-                Remove
-              </button>
-            </div>
-          ) : (
-            <div className="flex gap-2">
-              <Select
-                options={availableForOverflow.map((a) => ({
-                  value: a.id,
-                  label: `${a.icon === 'custom' && a.customEmoji ? a.customEmoji : ACCOUNT_ICONS[a.icon]} ${a.name}`,
-                }))}
-                value=""
-                onChange={(e) => {
-                  if (e.target.value) {
-                    onSetOverflowAccount(chain.id, e.target.value);
-                  }
-                }}
-                placeholder="Select overflow account"
-                className="flex-1"
-              />
             </div>
           )}
         </div>

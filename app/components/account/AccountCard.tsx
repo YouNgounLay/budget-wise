@@ -17,7 +17,6 @@ interface AccountCardProps {
   onDelete?: () => void;
   onDeposit?: () => void;
   onWithdraw?: () => void;
-  onManageRules?: () => void;
   compact?: boolean;
 }
 
@@ -28,7 +27,6 @@ export function AccountCard({
   onDelete,
   onDeposit,
   onWithdraw,
-  onManageRules,
   compact = false,
 }: AccountCardProps) {
   // Use customEmoji if icon is 'custom', otherwise use the preset icon
@@ -141,24 +139,28 @@ export function AccountCard({
         </div>
 
         {/* Amount */}
-        <div className="mb-4">
-          <p className="text-3xl font-bold" style={{ color }}>
+        <div className="mb-4 px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+          <p className="text-xs uppercase tracking-wide text-muted mb-1">Balance</p>
+          <p className="text-2xl font-bold text-foreground">
             {formatCurrency(account.amount)}
           </p>
         </div>
 
         {/* Quick actions */}
-        {(onDeposit || onWithdraw || onManageRules) && (
-          <div className="flex gap-2 flex-wrap">
+        {(onDeposit || onWithdraw) && (
+          <div className="flex gap-2">
             {onDeposit && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onDeposit();
                 }}
-                className="flex-1 min-w-[80px] px-3 py-2 text-sm font-medium rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50 transition-colors"
+                className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-semibold rounded-lg bg-french-blue text-white hover:bg-yale-blue transition-colors shadow-sm"
               >
-                + Deposit
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12m6-6H6" />
+                </svg>
+                Deposit
               </button>
             )}
             {onWithdraw && (
@@ -167,20 +169,12 @@ export function AccountCard({
                   e.stopPropagation();
                   onWithdraw();
                 }}
-                className="flex-1 min-w-[80px] px-3 py-2 text-sm font-medium rounded-lg bg-rose-100 text-rose-700 hover:bg-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:hover:bg-rose-900/50 transition-colors"
+                className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-semibold rounded-lg border-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
-                - Withdraw
-              </button>
-            )}
-            {onManageRules && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onManageRules();
-                }}
-                className="flex-1 min-w-[80px] px-3 py-2 text-sm font-medium rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50 transition-colors"
-              >
-                📅 Rules
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                </svg>
+                Withdraw
               </button>
             )}
           </div>

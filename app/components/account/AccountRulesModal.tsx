@@ -6,11 +6,13 @@
  */
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { Account, ACCOUNT_ICONS, ACCOUNT_COLORS } from '@/app/types/account';
+import { Account } from '@/app/types/account';
+import { getLucideIcon } from '@/app/utils/lucideIconMap';
 import {
   AccountRule,
   CreateAccountRuleDTO,
   AllocationTarget,
+  AllocationMode,
   DayOfWeek,
   DAY_OF_WEEK_LABELS,
   RuleExecutionResult,
@@ -54,6 +56,8 @@ export function AccountRulesModal({
   const [targets, setTargets] = useState<AllocationTarget[]>([]);
   const [selectedTargetId, setSelectedTargetId] = useState<string>('');
   const [targetPercentage, setTargetPercentage] = useState<string>('');
+  const [targetAmount, setTargetAmount] = useState<string>('');
+  const [allocationMode, setAllocationMode] = useState<AllocationMode>('percentage');
   const [error, setError] = useState<string>('');
   const [executionPreview, setExecutionPreview] = useState<RuleExecutionResult | null>(null);
 
@@ -85,24 +89,38 @@ export function AccountRulesModal({
     setTargets([]);
     setSelectedTargetId('');
     setTargetPercentage('');
+    setTargetAmount('');
+    setAllocationMode('percentage');
     setError('');
     setExecutionPreview(null);
   }, []);
 
   const handleAddTarget = useCallback(() => {
-    if (!selectedTargetId || !targetPercentage) return;
+    if (!selectedTargetId) return;
     
-    const percentage = parseFloat(targetPercentage);
-    if (isNaN(percentage) || percentage <= 0 || percentage > 100) {
-      setError('Percentage must be between 1 and 100');
-      return;
+    if (allocationMode === 'percentage') {
+      if (!targetPercentage) return;
+      const percentage = parseFloat(targetPercentage);
+      if (isNaN(percentage) || percentage <= 0 || percentage > 100) {
+        setError('Percentage must be between 0.01 and 100');
+        return;
+      }
+      setTargets((prev) => [...prev, { accountId: selectedTargetId, percentage, mode: 'percentage' }]);
+    } else {
+      if (!targetAmount) return;
+      const amount = parseFloat(targetAmount);
+      if (isNaN(amount) || amount <= 0) {
+        setError('Amount must be a positive number');
+        return;
+      }
+      setTargets((prev) => [...prev, { accountId: selectedTargetId, percentage: 0, amount, mode: 'amount' }]);
     }
-
-    setTargets((prev) => [...prev, { accountId: selectedTargetId, percentage }]);
+    
     setSelectedTargetId('');
     setTargetPercentage('');
+    setTargetAmount('');
     setError('');
-  }, [selectedTargetId, targetPercentage]);
+  }, [selectedTargetId, targetPercentage, targetAmount, allocationMode]);
 
   const handleRemoveTarget = useCallback((accountId: string) => {
     setTargets((prev) => prev.filter((t) => t.accountId !== accountId));
@@ -122,8 +140,11 @@ export function AccountRulesModal({
       return;
     }
 
-    if (totalPercentage !== 100) {
-      setError('Percentages must sum to 100%');
+    // Validate total percentage doesn't exceed 100% for percentage mode targets
+    const percentageTargets = targets.filter(t => t.mode === 'percentage');
+    const totalPercentageValue = percentageTargets.reduce((sum, t) => sum + t.percentage, 0);
+    if (totalPercentageValue > 100) {
+      setError('Total percentage cannot exceed 100%');
       return;
     }
 
@@ -140,7 +161,7 @@ export function AccountRulesModal({
     } else {
       setError(result.error || 'Failed to create rule');
     }
-  }, [account, dayOfWeek, thresholdAmount, targets, totalPercentage, onCreateRule, resetForm]);
+  }, [account, dayOfWeek, frequency, thresholdAmount, targets, onCreateRule, resetForm]);
 
   const handleExecuteRule = useCallback((ruleId: string) => {
     const result = onExecuteRule(ruleId);
@@ -265,7 +286,7 @@ export function AccountRulesModal({
           <p className="text-sm text-amber-700 dark:text-amber-400">
             Rules run on your selected day based on your chosen frequency (weekly, fortnightly, monthly, or annually). 
             If the account balance exceeds the threshold, excess funds are automatically distributed to target
-            accounts based on percentages you set.
+            accounts. You can allocate by <strong>percentage</strong> (e.g., 50% to Savings) or <strong>fixed amount</strong> (e.g., $100 to Emergency Fund).
           </p>
         </div>
 
@@ -319,7 +340,11 @@ export function AccountRulesModal({
                               key={target.accountId}
                               className="text-sm text-slate-600 dark:text-slate-400"
                             >
-                              → {targetAcc?.name || 'Unknown'}: {target.percentage}%
+                              → {targetAcc?.name || 'Unknown'}: {
+                                target.mode === 'amount' 
+                                  ? `$${target.amount?.toFixed(2)}`
+                                  : `${target.percentage}%`
+                              }
                             </p>
                           );
                         })}
@@ -402,6 +427,32 @@ export function AccountRulesModal({
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Target Accounts
               </label>
+
+              {/* Allocation Mode Toggle */}
+              <div className="flex gap-2 mb-3">
+                <button
+                  type="button"
+                  onClick={() => setAllocationMode('percentage')}
+                  className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                    allocationMode === 'percentage'
+                      ? 'bg-french-blue text-white border-french-blue'
+                      : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600'
+                  }`}
+                >
+                  Percentage (%)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAllocationMode('amount')}
+                  className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                    allocationMode === 'amount'
+                      ? 'bg-french-blue text-white border-french-blue'
+                      : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600'
+                  }`}
+                >
+                  Fixed Amount ($)
+                </button>
+              </div>
               
               {targets.length > 0 && (
                 <div className="space-y-2 mb-3">
@@ -412,14 +463,19 @@ export function AccountRulesModal({
                         key={target.accountId}
                         className="flex items-center justify-between p-2 bg-white dark:bg-slate-700 rounded border"
                       >
-                        <span className="text-sm">
-                          {targetAcc?.icon === 'custom' && targetAcc.customEmoji
-                            ? targetAcc.customEmoji
-                            : ACCOUNT_ICONS[targetAcc?.icon || 'money']}{' '}
+                        <span className="text-sm flex items-center gap-1">
+                          {(() => {
+                            const IconComponent = getLucideIcon(targetAcc?.icon || 'money');
+                            return <IconComponent className="w-4 h-4" />;
+                          })()}
                           {targetAcc?.name}
                         </span>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">{target.percentage}%</span>
+                          <span className="text-sm font-medium">
+                            {target.mode === 'percentage' 
+                              ? `${target.percentage}%` 
+                              : `$${target.amount?.toFixed(2)}`}
+                          </span>
                           <button
                             onClick={() => handleRemoveTarget(target.accountId)}
                             className="text-rose-500 hover:bg-rose-100 rounded p-1"
@@ -432,16 +488,25 @@ export function AccountRulesModal({
                       </div>
                     );
                   })}
-                  <p
-                    className={`text-sm font-medium ${
-                      totalPercentage === 100
-                        ? 'text-emerald-600'
-                        : 'text-amber-600'
-                    }`}
-                  >
-                    Total: {totalPercentage}%{' '}
-                    {totalPercentage !== 100 && '(must equal 100%)'}
-                  </p>
+                  {/* Show summary for percentage mode */}
+                  {targets.some(t => t.mode === 'percentage') && (
+                    <p
+                      className={`text-sm font-medium ${
+                        totalPercentage <= 100
+                          ? 'text-emerald-600'
+                          : 'text-rose-600'
+                      }`}
+                    >
+                      Total percentage: {totalPercentage}%{' '}
+                      {totalPercentage > 100 && '(cannot exceed 100%)'}
+                    </p>
+                  )}
+                  {/* Show summary for amount mode */}
+                  {targets.some(t => t.mode === 'amount') && (
+                    <p className="text-sm font-medium text-emerald-600">
+                      Total fixed amount: ${targets.filter(t => t.mode === 'amount').reduce((sum, t) => sum + (t.amount || 0), 0).toFixed(2)}
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -451,30 +516,38 @@ export function AccountRulesModal({
                     <Select
                       options={availableTargets.map((a) => ({
                         value: a.id,
-                        label: `${
-                          a.icon === 'custom' && a.customEmoji
-                            ? a.customEmoji
-                            : ACCOUNT_ICONS[a.icon]
-                        } ${a.name}`,
+                        label: a.name,
                       }))}
                       value={selectedTargetId}
                       onChange={(e) => setSelectedTargetId(e.target.value)}
                       placeholder="Select target account"
                     />
                   </div>
-                  <div className="w-20">
-                    <Input
-                      type="number"
-                      value={targetPercentage}
-                      onChange={(e) => setTargetPercentage(e.target.value)}
-                      placeholder="%"
-                      min={1}
-                      max={100}
-                    />
+                  <div className="w-24">
+                    {allocationMode === 'percentage' ? (
+                      <Input
+                        type="number"
+                        value={targetPercentage}
+                        onChange={(e) => setTargetPercentage(e.target.value)}
+                        placeholder="%"
+                        min={0.01}
+                        max={100}
+                        step={0.01}
+                      />
+                    ) : (
+                      <Input
+                        type="number"
+                        value={targetAmount}
+                        onChange={(e) => setTargetAmount(e.target.value)}
+                        placeholder="$"
+                        min={0.01}
+                        step={0.01}
+                      />
+                    )}
                   </div>
                   <Button
                     onClick={handleAddTarget}
-                    disabled={!selectedTargetId || !targetPercentage}
+                    disabled={!selectedTargetId || (allocationMode === 'percentage' ? !targetPercentage : !targetAmount)}
                   >
                     Add
                   </Button>

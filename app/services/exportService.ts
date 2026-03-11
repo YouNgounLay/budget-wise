@@ -8,13 +8,18 @@ import { Account } from '@/app/types/account';
 import { Chain } from '@/app/types/chain';
 import { Tag } from '@/app/types/tag';
 import { AccountRule } from '@/app/types/rule';
+import { TransactionStorage, Transaction } from '@/app/types/transaction';
+import { FontSettings, FontConfig } from '@/app/types/theme';
 import { getAllAccounts } from './accountService';
 import { getAllChains } from './chainService';
 import { getAllTags } from './tagService';
 import { getAllRules } from './ruleService';
+import { getAllTransactions } from './transactionService';
+import { loadFontSettings, loadCustomFonts } from './fontService';
+import { getFromStorage, STORAGE_KEYS } from '@/app/utils/storage';
 
 const APP_NAME = 'BudgetWise';
-const EXPORT_VERSION = '1.2';
+const EXPORT_VERSION = '1.5';
 
 export interface ExportData {
   metadata: {
@@ -25,11 +30,20 @@ export interface ExportData {
     chainCount: number;
     tagCount: number;
     ruleCount: number;
+    transactionCount: number;
   };
   accounts: Account[];
   chains: Chain[];
   tags: Tag[];
   rules: AccountRule[];
+  transactions: TransactionStorage;
+  // New settings data
+  settings?: {
+    customColors?: string[];
+    fontSettings?: FontSettings;
+    customFonts?: FontConfig[];
+    savedChainDescriptions?: string[];
+  };
 }
 
 /**
@@ -40,6 +54,21 @@ function gatherExportData(): ExportData {
   const chains = getAllChains();
   const tags = getAllTags();
   const rules = getAllRules();
+  const transactions = getAllTransactions();
+  
+  // Get settings data
+  const customColors = getFromStorage<string[]>(STORAGE_KEYS.CUSTOM_COLORS) || [];
+  const fontSettings = loadFontSettings();
+  const customFonts = loadCustomFonts();
+  const savedChainDescriptions = getFromStorage<string[]>(STORAGE_KEYS.SAVED_CHAIN_DESCRIPTIONS) || [];
+
+  // Count total transactions
+  let transactionCount = 0;
+  Object.values(transactions.years).forEach((year) => {
+    Object.values(year.months).forEach((monthTxns) => {
+      transactionCount += (monthTxns as Transaction[]).length;
+    });
+  });
   
   return {
     metadata: {
@@ -50,11 +79,19 @@ function gatherExportData(): ExportData {
       chainCount: chains.length,
       tagCount: tags.length,
       ruleCount: rules.length,
+      transactionCount,
     },
     accounts,
     chains,
     tags,
     rules,
+    transactions,
+    settings: {
+      customColors,
+      fontSettings,
+      customFonts,
+      savedChainDescriptions,
+    },
   };
 }
 
@@ -158,6 +195,7 @@ export function exportToExcel(): void {
     'Default Limit',
     'Has Buffer',
     'Buffer Amount',
+    'Buffer Account ID',
     'Distribution Mode',
     'Color',
     'Custom Color',
@@ -171,6 +209,7 @@ export function exportToExcel(): void {
     chain.defaultLimit,
     chain.hasBufferAccount ? 'true' : 'false',
     chain.bufferAmount || 0,
+    chain.bufferAccountId || '',
     chain.distributionMode || 'sequential',
     chain.color || 'french-blue',
     chain.customColor || '',
@@ -185,6 +224,7 @@ export function exportToExcel(): void {
     { wch: 15 },
     { wch: 12 },
     { wch: 15 },
+    { wch: 20 },
     { wch: 18 },
     { wch: 15 },
     { wch: 15 },
@@ -213,6 +253,29 @@ export function exportToExcel(): void {
     { wch: 12 },
   ];
   XLSX.utils.book_append_sheet(workbook, chainAccountsSheet, 'Chain Accounts');
+
+  // Account Items sheet (relationship table)
+  const accountItemHeaders = ['Account ID', 'Account Name', 'Item ID', 'Item Name', 'Item Cost'];
+  const accountItemRows: (string | number)[][] = [];
+  data.accounts.forEach((account) => {
+    if (account.items && account.items.length > 0) {
+      account.items.forEach((item) => {
+        accountItemRows.push([account.id, account.name, item.id, item.name, item.cost]);
+      });
+    }
+  });
+  const accountItemsSheet = XLSX.utils.aoa_to_sheet([
+    accountItemHeaders,
+    ...accountItemRows,
+  ]);
+  accountItemsSheet['!cols'] = [
+    { wch: 15 },
+    { wch: 25 },
+    { wch: 15 },
+    { wch: 25 },
+    { wch: 12 },
+  ];
+  XLSX.utils.book_append_sheet(workbook, accountItemsSheet, 'Account Items');
 
   // Tags sheet
   const tagHeaders = [

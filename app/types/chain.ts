@@ -24,7 +24,8 @@ export interface Chain {
   description: string;
   accounts: ChainAccountConfig[];
   hasBufferAccount: boolean; // Toggle for buffer account at end of chain
-  bufferAmount: number; // Amount stored in buffer (infinite capacity)
+  bufferAmount: number; // Amount stored in buffer (infinite capacity) - for virtual buffer only
+  bufferAccountId?: string; // Optional: use existing account as buffer instead of virtual buffer
   defaultLimit: number;
   distributionMode: ChainDistributionMode; // Distribution mode toggle
   color: AccountColor; // Chain card color

@@ -40,13 +40,12 @@ export function AccountList({
   }
 
   return (
-    <div className="account-list grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="account-list flex flex-col gap-4">
       {accounts.map((account) => (
         <AccountCard
           key={account.id}
           account={account}
           onEdit={onEdit ? () => onEdit(account) : undefined}
-          onDelete={onDelete ? () => onDelete(account) : undefined}
           onDeposit={onDeposit ? () => onDeposit(account) : undefined}
           onWithdraw={onWithdraw ? () => onWithdraw(account) : undefined}
         />

@@ -91,6 +91,26 @@ const navItems: NavItem[] = [
       </svg>
     ),
   },
+  {
+    href: '/transactions',
+    label: 'Transactions',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M9 5l7 7-7 7"
+        />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M15 19l-7-7 7-7"
+        />
+      </svg>
+    ),
+  },
 ];
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
@@ -113,7 +133,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           sidebar lg:sticky lg:top-16 inset-y-0 left-0
           flex flex-col w-64 bg-surface
           border-r border-border
-          h-[calc(100vh-4rem)] overflow-y-auto
+          h-screen lg:h-[calc(100vh-4rem)] overflow-y-auto
           transform transition-transform duration-300 ease-in-out
           fixed lg:relative z-50 lg:z-auto
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}

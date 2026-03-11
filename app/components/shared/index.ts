@@ -12,5 +12,17 @@ export { ThemeToggle } from './ThemeToggle';
 export { ThemeSelector } from './ThemeSelector';
 export { ThemeCustomizer } from './ThemeCustomizer';
 export { DataImportExportModal } from './DataImportExportModal';
+export { DeleteConfirmationModal } from './DeleteConfirmationModal';
 export { SearchBar } from './SearchBar';
 export { SettingsModal } from './SettingsModal';
+export { FontPicker } from './FontPicker';
+export {
+  SearchAllIcon,
+  WalletIcon,
+  ChainLinkIcon,
+  TagIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  DepositIcon,
+  WithdrawIcon,
+} from './Icons';

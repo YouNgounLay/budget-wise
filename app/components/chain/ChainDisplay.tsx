@@ -8,21 +8,19 @@
 
 import React from 'react';
 import { Chain } from '@/app/types/chain';
-import { Account, ACCOUNT_ICONS, ACCOUNT_COLORS } from '@/app/types/account';
+import { Account, ACCOUNT_COLORS } from '@/app/types/account';
 import { formatCurrency } from '@/app/utils/helpers';
+import { getLucideIcon } from '@/app/utils/lucideIconMap';
 import { Card } from '@/app/components/shared';
+import { Infinity, Building2 } from 'lucide-react';
 
 // Custom SVG Icons
 const InfinityIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.178 8c5.096 0 5.096 8 0 8-5.095 0-7.133-8-12.739-8-4.303 0-4.303 8 0 8 5.606 0 7.644-8 12.739-8z" />
-  </svg>
+  <Infinity className={className} />
 );
 
 const BankIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
-  </svg>
+  <Building2 className={className} />
 );
 
 interface ChainDisplayProps {
@@ -31,6 +29,7 @@ interface ChainDisplayProps {
   onEdit?: () => void;
   onDelete?: () => void;
   onDeposit?: () => void;
+  onWithdraw?: () => void;
   onManageAccounts?: () => void;
   compact?: boolean;
 }
@@ -41,6 +40,7 @@ export function ChainDisplay({
   onEdit,
   onDelete,
   onDeposit,
+  onWithdraw,
   onManageAccounts,
   compact = false,
 }: ChainDisplayProps) {
@@ -77,7 +77,7 @@ export function ChainDisplay({
   }
 
   return (
-    <Card padding="none" className="overflow-hidden">
+    <Card padding="none" className="overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-black/10 dark:hover:shadow-black/30">
       {/* Color banner */}
       <div className="h-2" style={{ backgroundColor: chainColor }} />
 
@@ -159,7 +159,9 @@ export function ChainDisplay({
           </div>
         ) : (
           <div className="flex flex-wrap items-center gap-2">
-            {chainAccounts.map((account, index) => (
+            {chainAccounts.map((account, index) => {
+              const AccountIconComponent = getLucideIcon(account.icon);
+              return (
               <React.Fragment key={account.id}>
                 {/* Account chip */}
                 <div
@@ -168,7 +170,12 @@ export function ChainDisplay({
                     borderLeft: `3px solid ${ACCOUNT_COLORS[account.color]}`,
                   }}
                 >
-                  <span className="text-xl">{account.icon === 'custom' && account.customEmoji ? account.customEmoji : ACCOUNT_ICONS[account.icon]}</span>
+                  <div 
+                    className="w-8 h-8 rounded-lg flex items-center justify-center"
+                    style={{ backgroundColor: `${ACCOUNT_COLORS[account.color]}20` }}
+                  >
+                    <AccountIconComponent className="w-4 h-4" style={{ color: ACCOUNT_COLORS[account.color] }} strokeWidth={1.5} />
+                  </div>
                   <div className="text-sm">
                     <p className="font-medium text-jet-black dark:text-white">
                       {account.name}
@@ -196,9 +203,9 @@ export function ChainDisplay({
                   </svg>
                 )}
               </React.Fragment>
-            ))}
+            );})}
 
-            {/* Buffer account (virtual, infinite capacity) */}
+            {/* Buffer account (virtual or existing account) */}
             {chain.hasBufferAccount && (
               <>
                 {/* Arrow to buffer */}
@@ -218,22 +225,58 @@ export function ChainDisplay({
                   </svg>
                 )}
                 {/* Buffer account chip */}
-                <div
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/30 dark:to-teal-900/30 border-2 border-dashed border-emerald-400 dark:border-emerald-600"
-                >
-                  <span className="text-emerald-600"><BankIcon /></span>
-                  <div className="text-sm">
-                    <p className="font-medium text-jet-black dark:text-white flex items-center gap-1">
-                      Buffer
-                      <span className="text-xs px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-300">
-                        <InfinityIcon className="w-3 h-3 inline" />
-                      </span>
-                    </p>
-                    <p className="text-slate-500 dark:text-slate-400">
-                      {formatCurrency(chain.bufferAmount)} <span className="text-emerald-600 dark:text-emerald-400">· No limit</span>
-                    </p>
+                {chain.bufferAccountId ? (
+                  // Using existing account as buffer
+                  (() => {
+                    const bufferAccount = accounts.find(a => a.id === chain.bufferAccountId);
+                    if (!bufferAccount) return null;
+                    const BufferIconComponent = getLucideIcon(bufferAccount.icon);
+                    return (
+                      <div
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/30 dark:to-teal-900/30 border-2 border-solid border-emerald-400 dark:border-emerald-600"
+                        style={{
+                          borderLeft: `4px solid ${ACCOUNT_COLORS[bufferAccount.color] || ACCOUNT_COLORS['emerald']}`,
+                        }}
+                      >
+                        <div 
+                          className="w-8 h-8 rounded-lg flex items-center justify-center"
+                          style={{ backgroundColor: `${ACCOUNT_COLORS[bufferAccount.color] || ACCOUNT_COLORS['emerald']}20` }}
+                        >
+                          <BufferIconComponent className="w-4 h-4" style={{ color: ACCOUNT_COLORS[bufferAccount.color] || ACCOUNT_COLORS['emerald'] }} strokeWidth={1.5} />
+                        </div>
+                        <div className="text-sm">
+                          <p className="font-medium text-jet-black dark:text-white flex items-center gap-1">
+                            {bufferAccount.name}
+                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-300">
+                              Buffer
+                            </span>
+                          </p>
+                          <p className="text-slate-500 dark:text-slate-400">
+                            {formatCurrency(bufferAccount.amount)} <span className="text-emerald-600 dark:text-emerald-400">· No limit</span>
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })()
+                ) : (
+                  // Virtual buffer (infinite capacity)
+                  <div
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/30 dark:to-teal-900/30 border-2 border-dashed border-emerald-400 dark:border-emerald-600"
+                  >
+                    <span className="text-emerald-600"><BankIcon /></span>
+                    <div className="text-sm">
+                      <p className="font-medium text-jet-black dark:text-white flex items-center gap-1">
+                        Buffer
+                        <span className="text-xs px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-300">
+                          <InfinityIcon className="w-3 h-3 inline" />
+                        </span>
+                      </p>
+                      <p className="text-slate-500 dark:text-slate-400">
+                        {formatCurrency(chain.bufferAmount)} <span className="text-emerald-600 dark:text-emerald-400">· No limit</span>
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
               </>
             )}
           </div>
@@ -248,6 +291,14 @@ export function ChainDisplay({
             className="flex-1 px-3 py-2 text-sm font-medium rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 transition-colors"
           >
             Deposit to Chain
+          </button>
+        )}
+        {onWithdraw && (
+          <button
+            onClick={onWithdraw}
+            className="flex-1 px-3 py-2 text-sm font-medium rounded-lg bg-rose-100 text-rose-700 hover:bg-rose-200 dark:bg-rose-900/30 dark:text-rose-400 transition-colors"
+          >
+            Withdraw from Chain
           </button>
         )}
       </div>

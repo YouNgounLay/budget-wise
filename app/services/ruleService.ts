@@ -9,6 +9,7 @@ import {
   UpdateAccountRuleDTO,
   RuleExecutionResult,
   DayOfWeek,
+  AllocationTarget,
 } from '@/app/types/rule';
 import { Account } from '@/app/types/account';
 import { getFromStorage, setToStorage, STORAGE_KEYS } from '@/app/utils/storage';
@@ -79,34 +80,68 @@ export function validateNoDuplicateTargets(
 }
 
 /**
- * Validates that target percentages sum to 100
+ * Validates that target allocations are valid
+ * For percentage mode: allows any percentage > 0 and <= 100, total cannot exceed 100%
+ * For amount mode: allows any positive amount
  */
-export function validatePercentages(
-  targets: { accountId: string; percentage: number }[]
+export function validateAllocations(
+  targets: AllocationTarget[]
 ): { valid: boolean; message: string } {
   if (targets.length === 0) {
     return { valid: false, message: 'At least one target account is required' };
   }
 
-  const totalPercentage = targets.reduce((sum, t) => sum + t.percentage, 0);
-  if (totalPercentage !== 100) {
+  // Separate targets by mode
+  const percentageTargets = targets.filter(t => t.mode === 'percentage' || !t.mode);
+  const amountTargets = targets.filter(t => t.mode === 'amount');
+
+  // Validate percentage targets
+  const totalPercentage = percentageTargets.reduce((sum, t) => sum + t.percentage, 0);
+  if (totalPercentage > 100) {
     return {
       valid: false,
-      message: `Percentages must sum to 100% (current: ${totalPercentage}%)`,
+      message: `Total percentage cannot exceed 100% (current: ${totalPercentage}%)`,
     };
   }
 
   // Check for invalid individual percentages
-  for (const target of targets) {
-    if (target.percentage < 0 || target.percentage > 100) {
+  for (const target of percentageTargets) {
+    if (target.percentage <= 0 || target.percentage > 100) {
       return {
         valid: false,
-        message: 'Each percentage must be between 0 and 100',
+        message: 'Each percentage must be between 0.01 and 100',
+      };
+    }
+  }
+
+  // Check for invalid individual amounts
+  for (const target of amountTargets) {
+    if (!target.amount || target.amount <= 0) {
+      return {
+        valid: false,
+        message: 'Each amount must be a positive number',
       };
     }
   }
 
   return { valid: true, message: '' };
+}
+
+/**
+ * @deprecated Use validateAllocations instead
+ * Validates that target percentages sum to 100 (legacy function)
+ */
+export function validatePercentages(
+  targets: { accountId: string; percentage: number; mode?: string; amount?: number }[]
+): { valid: boolean; message: string } {
+  // Convert to AllocationTarget format and use new validation
+  const allocationTargets: AllocationTarget[] = targets.map(t => ({
+    accountId: t.accountId,
+    percentage: t.percentage,
+    amount: t.amount,
+    mode: (t.mode as 'percentage' | 'amount') || 'percentage',
+  }));
+  return validateAllocations(allocationTargets);
 }
 
 /**
@@ -257,15 +292,23 @@ export function executeRule(
     const targetAccount = accounts.find((a) => a.id === target.accountId);
     if (!targetAccount) continue;
 
-    const allocationAmount =
-      Math.round((excessAmount * target.percentage) / 100 * 100) / 100;
+    let allocationAmount: number;
+    
+    // Handle both percentage and amount modes
+    if (target.mode === 'amount' && target.amount) {
+      // Fixed amount mode - allocate the specified amount (up to excess)
+      allocationAmount = Math.min(target.amount, excessAmount);
+    } else {
+      // Percentage mode (default)
+      allocationAmount = Math.round((excessAmount * target.percentage) / 100 * 100) / 100;
+    }
 
     if (allocationAmount > 0) {
       allocations.push({
         accountId: targetAccount.id,
         accountName: targetAccount.name,
         amount: allocationAmount,
-        percentage: target.percentage,
+        percentage: target.mode === 'amount' ? 0 : target.percentage,
         newBalance: targetAccount.amount + allocationAmount,
       });
     }

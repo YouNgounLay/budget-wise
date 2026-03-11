@@ -5,12 +5,15 @@
  * Modal for depositing money to a chain
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Chain, DepositResult } from '@/app/types/chain';
-import { Account, ACCOUNT_ICONS } from '@/app/types/account';
+import { Account } from '@/app/types/account';
 import { formatCurrency } from '@/app/utils/helpers';
+import { getLucideIcon } from '@/app/utils/lucideIconMap';
 import { depositToChain } from '@/app/services/depositService';
 import { Button, Input, Modal } from '@/app/components/shared';
+import { getFromStorage, setToStorage, STORAGE_KEYS } from '@/app/utils/storage';
+import { ChevronDown, Save, X } from 'lucide-react';
 
 // Custom SVG Icons
 const ChartIcon = () => (
@@ -49,7 +52,7 @@ interface ChainDepositModalProps {
   onClose: () => void;
   chain: Chain | null;
   accounts: Account[];
-  onConfirmDeposit: (result: DepositResult) => void;
+  onConfirmDeposit: (result: DepositResult, description?: string) => void;
 }
 
 export function ChainDepositModal({
@@ -62,6 +65,43 @@ export function ChainDepositModal({
   const [amount, setAmount] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [preview, setPreview] = useState<DepositResult | null>(null);
+  const [description, setDescription] = useState<string>('');
+  const [saveForFuture, setSaveForFuture] = useState<boolean>(false);
+  const [savedDescriptions, setSavedDescriptions] = useState<string[]>([]);
+  const [showSavedDescriptions, setShowSavedDescriptions] = useState<boolean>(false);
+
+  // Load saved descriptions on mount
+  useEffect(() => {
+    const saved = getFromStorage<string[]>(STORAGE_KEYS.SAVED_CHAIN_DESCRIPTIONS) || [];
+    setSavedDescriptions(saved);
+  }, []);
+
+  // Reset state when modal opens/closes
+  useEffect(() => {
+    if (!isOpen) {
+      setDescription('');
+      setSaveForFuture(false);
+      setShowSavedDescriptions(false);
+    }
+  }, [isOpen]);
+
+  const handleSaveDescription = (desc: string) => {
+    if (!desc.trim()) return;
+    const saved = getFromStorage<string[]>(STORAGE_KEYS.SAVED_CHAIN_DESCRIPTIONS) || [];
+    // Remove if already exists (to move to front)
+    const filtered = saved.filter(s => s.toLowerCase() !== desc.toLowerCase());
+    // Add to front, keep max 10
+    const updated = [desc.trim(), ...filtered].slice(0, 10);
+    setToStorage(STORAGE_KEYS.SAVED_CHAIN_DESCRIPTIONS, updated);
+    setSavedDescriptions(updated);
+  };
+
+  const handleDeleteSavedDescription = (desc: string) => {
+    const saved = getFromStorage<string[]>(STORAGE_KEYS.SAVED_CHAIN_DESCRIPTIONS) || [];
+    const updated = saved.filter(s => s !== desc);
+    setToStorage(STORAGE_KEYS.SAVED_CHAIN_DESCRIPTIONS, updated);
+    setSavedDescriptions(updated);
+  };
 
   const handlePreview = () => {
     const numAmount = parseFloat(amount);
@@ -79,7 +119,11 @@ export function ChainDepositModal({
 
   const handleConfirm = () => {
     if (preview && preview.success) {
-      onConfirmDeposit(preview);
+      // Save description for future if toggle is on
+      if (saveForFuture && description.trim()) {
+        handleSaveDescription(description.trim());
+      }
+      onConfirmDeposit(preview, description.trim() || undefined);
       handleClose();
     }
   };
@@ -88,6 +132,9 @@ export function ChainDepositModal({
     setAmount('');
     setError('');
     setPreview(null);
+    setDescription('');
+    setSaveForFuture(false);
+    setShowSavedDescriptions(false);
     onClose();
   };
 
@@ -118,6 +165,73 @@ export function ChainDepositModal({
               autoFocus
             />
 
+            {/* Description Section */}
+            <div className="space-y-2">
+              <div className="relative">
+                <Input
+                  label="Description (optional)"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="What is this deposit for?"
+                />
+                {savedDescriptions.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowSavedDescriptions(!showSavedDescriptions)}
+                    className="absolute right-3 top-8 p-1 text-slate-400 hover:text-french-blue transition-colors"
+                    title="Show saved descriptions"
+                  >
+                    <ChevronDown className={`w-4 h-4 transition-transform ${showSavedDescriptions ? 'rotate-180' : ''}`} />
+                  </button>
+                )}
+              </div>
+
+              {/* Saved descriptions dropdown */}
+              {showSavedDescriptions && savedDescriptions.length > 0 && (
+                <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-surface max-h-32 overflow-y-auto">
+                  {savedDescriptions.map((saved, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-2 hover:bg-slate-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-700 last:border-b-0"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDescription(saved);
+                          setShowSavedDescriptions(false);
+                        }}
+                        className="flex-1 text-left text-sm text-foreground hover:text-french-blue truncate"
+                      >
+                        {saved}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteSavedDescription(saved)}
+                        className="ml-2 p-1 text-slate-400 hover:text-rose-500 transition-colors"
+                        title="Remove saved description"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Save for future toggle */}
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={saveForFuture}
+                  onChange={(e) => setSaveForFuture(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-300 text-french-blue focus:ring-french-blue"
+                />
+                <span className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                  <Save className="w-3.5 h-3.5" />
+                  Save description for future use
+                </span>
+              </label>
+            </div>
+
             <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="font-medium text-sm text-slate-700 dark:text-slate-300">
@@ -144,7 +258,12 @@ export function ChainDepositModal({
                       className="flex items-center gap-2 text-sm"
                     >
                       <span className="text-slate-400">{index + 1}.</span>
-                      <span>{account.icon === 'custom' && account.customEmoji ? account.customEmoji : ACCOUNT_ICONS[account.icon]}</span>
+                      <span className="flex items-center">
+                        {(() => {
+                          const IconComponent = getLucideIcon(account.icon);
+                          return <IconComponent className="w-4 h-4" />;
+                        })()}
+                      </span>
                       <span className="text-jet-black dark:text-white">
                         {account.name}
                       </span>

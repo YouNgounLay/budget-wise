@@ -15,6 +15,7 @@ interface ChainFormProps {
   onSubmit: (data: CreateChainDTO) => void;
   chain?: Chain;
   title?: string;
+  existingChains?: Chain[];
 }
 
 const defaultFormData: CreateChainDTO = {
@@ -29,6 +30,7 @@ export function ChainForm({
   onSubmit,
   chain,
   title,
+  existingChains = [],
 }: ChainFormProps) {
   const [formData, setFormData] = useState<CreateChainDTO>(defaultFormData);
   const [errors, setErrors] = useState<Partial<Record<keyof CreateChainDTO, string>>>({});
@@ -59,6 +61,15 @@ export function ChainForm({
 
     if (!formData.name.trim()) {
       newErrors.name = 'Chain name is required';
+    } else {
+      // Check for duplicate name (case-insensitive)
+      const normalizedName = formData.name.trim().toLowerCase();
+      const duplicate = existingChains.find(
+        (c) => c.name.toLowerCase() === normalizedName && c.id !== chain?.id
+      );
+      if (duplicate) {
+        newErrors.name = 'A chain with this name already exists';
+      }
     }
 
     if ((formData.defaultLimit ?? 0) < 0) {

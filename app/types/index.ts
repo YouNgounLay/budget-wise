@@ -8,3 +8,4 @@ export * from './chain';
 export * from './rule';
 export * from './theme';
 export * from './tag';
+export * from './transaction';

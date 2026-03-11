@@ -113,6 +113,16 @@ export type AccountColor =
   | 'slate'
   | 'custom';
 
+/**
+ * Item associated with an account
+ * Represents a cost item within an account (e.g., Gym Membership, Entry Pass)
+ */
+export interface AccountItem {
+  id: string;
+  name: string;
+  cost: number;
+}
+
 export interface Account {
   id: string;
   name: string;
@@ -123,6 +133,7 @@ export interface Account {
   color: AccountColor;
   customColor?: string;
   tagIds: string[]; // Array of tag IDs associated with this account
+  items?: AccountItem[]; // List of items/costs associated with this account
   createdAt: string;
   updatedAt: string;
 }
@@ -136,6 +147,7 @@ export interface CreateAccountDTO {
   color: AccountColor;
   customColor?: string;
   tagIds?: string[];
+  items?: AccountItem[];
 }
 
 export interface UpdateAccountDTO {
@@ -147,6 +159,7 @@ export interface UpdateAccountDTO {
   color?: AccountColor;
   customColor?: string;
   tagIds?: string[];
+  items?: AccountItem[];
 }
 
 export const ACCOUNT_ICONS: Record<AccountIcon, string> = {

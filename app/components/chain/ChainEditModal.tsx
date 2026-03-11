@@ -8,36 +8,18 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Chain, CreateChainDTO, ChainDistributionMode } from '@/app/types/chain';
-import { Account, AccountColor, ACCOUNT_ICONS, ACCOUNT_COLORS } from '@/app/types/account';
+import { Account, AccountColor, ACCOUNT_COLORS } from '@/app/types/account';
 import { formatCurrency } from '@/app/utils/helpers';
+import { getLucideIcon } from '@/app/utils/lucideIconMap';
 import { Button, Input, Modal, Select } from '@/app/components/shared';
 import { ColorPicker } from '@/app/components/account/ColorPicker';
+import { FileText, PieChart, List, Infinity, ChevronUp, ChevronDown, Pencil, Check, X, Trash2 } from 'lucide-react';
 
-// Custom SVG Icons
-const DocumentIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-  </svg>
-);
-
-const ChartIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
-  </svg>
-);
-
-const ListIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-  </svg>
-);
-
-const InfinityIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.178 8c5.096 0 5.096 8 0 8-5.095 0-7.133-8-12.739-8-4.303 0-4.303 8 0 8 5.606 0 7.644-8 12.739-8z" />
-  </svg>
-);
+// Custom Icon wrappers for backward compatibility
+const DocumentIcon = () => <FileText className="w-5 h-5" />;
+const ChartIcon = () => <PieChart className="w-5 h-5" />;
+const ListIcon = () => <List className="w-5 h-5" />;
+const InfinityIcon = () => <Infinity className="w-5 h-5" />;
 
 const BankIcon = () => (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -80,6 +62,7 @@ interface ChainEditModalProps {
   onClose: () => void;
   chain: Chain | null;
   accounts: Account[];
+  existingChains?: Chain[];
   onSave: (data: CreateChainDTO) => void;
   onAddAccount: (chainId: string, accountId: string, limit?: number, percentage?: number) => void;
   onRemoveAccount: (chainId: string, accountId: string) => void;
@@ -87,6 +70,7 @@ interface ChainEditModalProps {
   onUpdateLimit: (chainId: string, accountId: string, newLimit: number) => void;
   onUpdatePercentage: (chainId: string, accountId: string, newPercentage: number) => void;
   onToggleBuffer: (chainId: string) => void;
+  onSetBufferAccount: (chainId: string, accountId: string | null) => void;
   onToggleDistributionMode: (chainId: string) => void;
   isCreating?: boolean;
 }
@@ -104,6 +88,7 @@ export function ChainEditModal({
   onClose,
   chain,
   accounts,
+  existingChains = [],
   onSave,
   onAddAccount,
   onRemoveAccount,
@@ -111,6 +96,7 @@ export function ChainEditModal({
   onUpdateLimit,
   onUpdatePercentage,
   onToggleBuffer,
+  onSetBufferAccount,
   onToggleDistributionMode,
   isCreating = false,
 }: ChainEditModalProps) {
@@ -119,10 +105,8 @@ export function ChainEditModal({
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
   const [newLimit, setNewLimit] = useState<string>('');
   const [newPercentage, setNewPercentage] = useState<string>('');
-  const [editingLimitId, setEditingLimitId] = useState<string | null>(null);
-  const [editLimitValue, setEditLimitValue] = useState<string>('');
-  const [editingPercentageId, setEditingPercentageId] = useState<string | null>(null);
-  const [editPercentageValue, setEditPercentageValue] = useState<string>('');
+  const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState<string>('');
   const [showAppearance, setShowAppearance] = useState(false);
   const [showModeInfo, setShowModeInfo] = useState(false);
 
@@ -142,10 +126,8 @@ export function ChainEditModal({
       setSelectedAccountId('');
       setNewLimit('');
       setNewPercentage('');
-      setEditingLimitId(null);
-      setEditLimitValue('');
-      setEditingPercentageId(null);
-      setEditPercentageValue('');
+      setEditingAccountId(null);
+      setEditValue('');
       setShowAppearance(false);
       setShowModeInfo(false);
     }
@@ -193,6 +175,15 @@ export function ChainEditModal({
 
     if (!formData.name.trim()) {
       newErrors.name = 'Chain name is required';
+    } else {
+      // Check for duplicate name (case-insensitive)
+      const normalizedName = formData.name.trim().toLowerCase();
+      const duplicate = existingChains.find(
+        (c) => c.name.toLowerCase() === normalizedName && c.id !== chain?.id
+      );
+      if (duplicate) {
+        newErrors.name = 'A chain with this name already exists';
+      }
     }
 
     if ((formData.defaultLimit ?? 0) < 0) {
@@ -241,25 +232,39 @@ export function ChainEditModal({
     onReorder(chain.id, newOrder);
   }, [chain, onReorder]);
 
-  const handleSaveLimit = useCallback((accountId: string) => {
-    if (!chain) return;
-    const newLimitNum = parseFloat(editLimitValue);
-    if (!isNaN(newLimitNum) && newLimitNum >= 0) {
-      onUpdateLimit(chain.id, accountId, newLimitNum);
-    }
-    setEditingLimitId(null);
-    setEditLimitValue('');
-  }, [chain, editLimitValue, onUpdateLimit]);
+  // Start editing an account
+  const handleStartEdit = useCallback((accountId: string, currentValue: number) => {
+    setEditingAccountId(accountId);
+    setEditValue(currentValue.toString());
+  }, []);
 
-  const handleSavePercentage = useCallback((accountId: string) => {
+  // Confirm edit and save
+  const handleConfirmEdit = useCallback((accountId: string) => {
     if (!chain) return;
-    const newPercentageNum = parseFloat(editPercentageValue);
-    if (!isNaN(newPercentageNum) && newPercentageNum >= 0 && newPercentageNum <= 100) {
-      onUpdatePercentage(chain.id, accountId, newPercentageNum);
+    const value = parseFloat(editValue);
+    if (isNaN(value) || value < 0) {
+      setEditingAccountId(null);
+      setEditValue('');
+      return;
     }
-    setEditingPercentageId(null);
-    setEditPercentageValue('');
-  }, [chain, editPercentageValue, onUpdatePercentage]);
+    
+    if (isPercentageMode) {
+      if (value <= 100) {
+        onUpdatePercentage(chain.id, accountId, value);
+      }
+    } else {
+      onUpdateLimit(chain.id, accountId, value);
+    }
+    
+    setEditingAccountId(null);
+    setEditValue('');
+  }, [chain, editValue, isPercentageMode, onUpdateLimit, onUpdatePercentage]);
+
+  // Cancel edit
+  const handleCancelEdit = useCallback(() => {
+    setEditingAccountId(null);
+    setEditValue('');
+  }, []);
 
   const handleToggleMode = useCallback(() => {
     if (!chain) return;
@@ -446,7 +451,7 @@ export function ChainEditModal({
                     {chainAccountsWithData.map((account, index) => (
                       <div
                         key={account.id}
-                        className="flex items-center gap-3 p-3 bg-surface border border-border rounded-lg"
+                        className="flex items-center gap-3 p-3 bg-surface border border-border rounded-lg overflow-visible"
                         style={{
                           borderLeftColor: ACCOUNT_COLORS[account.color],
                           borderLeftWidth: '4px',
@@ -461,9 +466,7 @@ export function ChainEditModal({
                             className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
                             aria-label="Move up"
                           >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                            </svg>
+                            <ChevronUp className="w-4 h-4" />
                           </button>
                           <button
                             type="button"
@@ -472,14 +475,16 @@ export function ChainEditModal({
                             className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
                             aria-label="Move down"
                           >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
+                            <ChevronDown className="w-4 h-4" />
                           </button>
                         </div>
 
                         {/* Account info */}
-                        <span className="text-xl">{account.icon === 'custom' && account.customEmoji ? account.customEmoji : ACCOUNT_ICONS[account.icon]}</span>
+                        {(() => { const AccountIcon = getLucideIcon(account.icon); return (
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${ACCOUNT_COLORS[account.color]}20` }}>
+                            <AccountIcon className="w-4 h-4" style={{ color: ACCOUNT_COLORS[account.color] }} strokeWidth={1.5} />
+                          </div>
+                        ); })()}
                         <div className="flex-1">
                           <p className="font-medium text-jet-black dark:text-white">
                             {account.name}
@@ -489,100 +494,72 @@ export function ChainEditModal({
                           </p>
                         </div>
 
-                        {/* Limit or Percentage */}
-                        <div className="text-right">
-                          {isPercentageMode ? (
-                            editingPercentageId === account.id ? (
-                              <div className="flex items-center gap-2">
-                                <Input
-                                  type="number"
-                                  value={editPercentageValue}
-                                  onChange={(e) => setEditPercentageValue(e.target.value)}
-                                  className="w-20 text-sm"
-                                  min={0}
-                                  max={100}
-                                  autoFocus
-                                />
-                                <span className="text-sm text-slate-500">%</span>
-                                <button
-                                  type="button"
-                                  onClick={() => handleSavePercentage(account.id)}
-                                  className="p-1 text-emerald-600 hover:bg-emerald-100 rounded"
-                                >
-                                  <CheckIcon />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setEditingPercentageId(null)}
-                                  className="p-1 text-slate-500 hover:bg-slate-100 rounded"
-                                >
-                                  <CloseIcon />
-                                </button>
-                              </div>
-                            ) : (
+                        {/* Edit button / Edit mode */}
+                        {editingAccountId === account.id ? (
+                          <div className="flex flex-col gap-2">
+                            {/* Edit value row */}
+                            <div className="flex items-center gap-2 relative z-10">
+                              <span className="text-xs text-muted">
+                                {isPercentageMode ? 'Percentage:' : 'Limit:'}
+                              </span>
+                              <Input
+                                type="number"
+                                value={editValue}
+                                onChange={(e) => setEditValue(e.target.value)}
+                                className="w-24 text-sm"
+                                min={0}
+                                max={isPercentageMode ? 100 : undefined}
+                                autoFocus
+                              />
+                              {isPercentageMode && <span className="text-sm text-slate-500">%</span>}
+                            </div>
+                            {/* Action buttons */}
+                            <div className="flex items-center gap-2">
                               <button
                                 type="button"
-                                onClick={() => {
-                                  setEditingPercentageId(account.id);
-                                  setEditPercentageValue(account.percentage.toString());
-                                }}
-                                className="text-sm text-slate-500 hover:text-french-blue flex items-center gap-1"
+                                onClick={() => handleConfirmEdit(account.id)}
+                                className="flex-1 flex items-center justify-center gap-1 px-2 py-1 text-xs font-medium text-white bg-emerald-500 hover:bg-emerald-600 rounded transition-colors"
                               >
-                                {account.percentage}% <EditIcon />
+                                <CheckIcon /> Confirm
                               </button>
-                            )
-                          ) : (
-                            editingLimitId === account.id ? (
-                              <div className="flex items-center gap-2">
-                                <Input
-                                  type="number"
-                                  value={editLimitValue}
-                                  onChange={(e) => setEditLimitValue(e.target.value)}
-                                  className="w-24 text-sm"
-                                  min={0}
-                                  autoFocus
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => handleSaveLimit(account.id)}
-                                  className="p-1 text-emerald-600 hover:bg-emerald-100 rounded"
-                                >
-                                  <CheckIcon />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setEditingLimitId(null)}
-                                  className="p-1 text-slate-500 hover:bg-slate-100 rounded"
-                                >
-                                  <CloseIcon />
-                                </button>
-                              </div>
-                            ) : (
                               <button
                                 type="button"
-                                onClick={() => {
-                                  setEditingLimitId(account.id);
-                                  setEditLimitValue(account.limit.toString());
-                                }}
-                                className="text-sm text-slate-500 hover:text-french-blue flex items-center gap-1"
+                                onClick={handleCancelEdit}
+                                className="flex-1 flex items-center justify-center gap-1 px-2 py-1 text-xs font-medium text-slate-600 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 rounded transition-colors"
                               >
-                                Limit: {formatCurrency(account.limit)} <EditIcon />
+                                <CloseIcon /> Cancel
                               </button>
-                            )
-                          )}
-                        </div>
-
-                        {/* Remove button */}
-                        <button
-                          type="button"
-                          onClick={() => onRemoveAccount(chain.id, account.id)}
-                          className="p-1.5 text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-900/30 rounded-lg"
-                          aria-label="Remove from chain"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
+                            </div>
+                            {/* Remove account button */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                onRemoveAccount(chain.id, account.id);
+                                handleCancelEdit();
+                              }}
+                              className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium text-rose-600 border border-rose-300 dark:border-rose-700 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded transition-colors"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                              Remove Account
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-slate-500">
+                              {isPercentageMode ? `${account.percentage}%` : `Limit: ${formatCurrency(account.limit)}`}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleStartEdit(account.id, isPercentageMode ? account.percentage : account.limit)}
+                              className="p-1.5 text-french-blue hover:bg-french-blue/10 rounded-lg transition-colors"
+                              aria-label="Edit account"
+                            >
+                              <EditIcon />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -604,7 +581,7 @@ export function ChainEditModal({
                         <Select
                           options={availableAccounts.map((a) => ({
                             value: a.id,
-                            label: `${a.icon === 'custom' && a.customEmoji ? a.customEmoji : ACCOUNT_ICONS[a.icon]} ${a.name}`,
+                            label: a.name,
                           }))}
                           value={selectedAccountId}
                           onChange={(e) => setSelectedAccountId(e.target.value)}
@@ -674,23 +651,94 @@ export function ChainEditModal({
                   </div>
                   
                   {chain.hasBufferAccount && (
-                    <div className="mt-3 p-3 bg-surface rounded-lg border border-emerald-200 dark:border-emerald-700">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-emerald-600"><BankIcon /></span>
-                          <span className="font-medium text-foreground">Chain Buffer</span>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">
-                            {formatCurrency(chain.bufferAmount)}
-                          </p>
-                          {chain.bufferAmount > 0 && (
-                            <p className="text-xs text-amber-600 dark:text-amber-400">
-                              Cannot disable until emptied
-                            </p>
-                          )}
-                        </div>
+                    <div className="mt-3 space-y-3">
+                      {/* Buffer Type Selection */}
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => onSetBufferAccount(chain.id, null)}
+                          className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            !chain.bufferAccountId
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-surface border border-border text-foreground hover:bg-slate-50 dark:hover:bg-slate-700'
+                          }`}
+                        >
+                          <span className="flex items-center justify-center gap-1">
+                            <InfinityIcon /> Virtual Buffer
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            // Select first available account if switching to account buffer
+                            if (availableAccounts.length > 0 && !chain.bufferAccountId) {
+                              onSetBufferAccount(chain.id, availableAccounts[0].id);
+                            }
+                          }}
+                          disabled={availableAccounts.length === 0}
+                          className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            chain.bufferAccountId
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-surface border border-border text-foreground hover:bg-slate-50 dark:hover:bg-slate-700'
+                          } ${availableAccounts.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          title={availableAccounts.length === 0 ? 'No available accounts (all accounts are in the chain)' : ''}
+                        >
+                          <span className="flex items-center justify-center gap-1">
+                            <BankIcon /> Use Account
+                          </span>
+                        </button>
                       </div>
+
+                      {/* Virtual Buffer Display */}
+                      {!chain.bufferAccountId && (
+                        <div className="p-3 bg-surface rounded-lg border border-emerald-200 dark:border-emerald-700">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-emerald-600"><BankIcon /></span>
+                              <span className="font-medium text-foreground">Chain Buffer (Unlimited)</span>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">
+                                {formatCurrency(chain.bufferAmount)}
+                              </p>
+                              {chain.bufferAmount > 0 && (
+                                <p className="text-xs text-amber-600 dark:text-amber-400">
+                                  Cannot disable until emptied
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Account Buffer Selector */}
+                      {chain.bufferAccountId && (
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-foreground">
+                            Select Buffer Account:
+                          </label>
+                          <select
+                            value={chain.bufferAccountId}
+                            onChange={(e) => onSetBufferAccount(chain.id, e.target.value)}
+                            className="w-full px-3 py-2 rounded-lg border border-border bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          >
+                            {availableAccounts.map((account) => (
+                              <option key={account.id} value={account.id}>
+                                {account.name} ({formatCurrency(account.amount)})
+                              </option>
+                            ))}
+                            {/* Also include current buffer account if it was removed from available */}
+                            {chain.bufferAccountId && !availableAccounts.some(a => a.id === chain.bufferAccountId) && (
+                              <option value={chain.bufferAccountId}>
+                                {accounts.find(a => a.id === chain.bufferAccountId)?.name || 'Unknown'} (current buffer)
+                              </option>
+                            )}
+                          </select>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            Overflow funds will be deposited directly to this account
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

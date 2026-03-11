@@ -295,8 +295,9 @@ export function DataImportExportModal({
                   </p>
                   {importResult.success && (
                     <p className="text-xs text-green-700 dark:text-green-300 mt-1">
-                      Imported {importResult.accountsImported} accounts and{' '}
-                      {importResult.chainsImported} chains
+                      Imported {importResult.accountsImported} accounts, {importResult.chainsImported} chains,{' '}
+                      {importResult.tagsImported} tags, {importResult.rulesImported} rules,{' '}
+                      and {importResult.transactionsImported} transactions
                     </p>
                   )}
                   {importResult.errors.length > 0 && (

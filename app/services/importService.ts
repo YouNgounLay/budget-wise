@@ -4,10 +4,11 @@
  */
 
 import * as XLSX from 'xlsx';
-import { Account, AccountIcon, AccountColor } from '@/app/types/account';
+import { Account, AccountIcon, AccountColor, AccountItem } from '@/app/types/account';
 import { Chain, ChainAccountConfig } from '@/app/types/chain';
 import { Tag } from '@/app/types/tag';
 import { AccountRule, AllocationTarget, RuleFrequency, DayOfWeek } from '@/app/types/rule';
+import { TransactionStorage } from '@/app/types/transaction';
 import { setToStorage, STORAGE_KEYS } from '@/app/utils/storage';
 import { ExportData } from './exportService';
 
@@ -18,6 +19,7 @@ export interface ImportResult {
   chainsImported: number;
   tagsImported: number;
   rulesImported: number;
+  transactionsImported: number;
   errors: string[];
 }
 
@@ -180,14 +182,16 @@ export async function importFromJSON(file: File): Promise<ImportResult> {
         chainsImported: 0,
         tagsImported: 0,
         rulesImported: 0,
+        transactionsImported: 0,
         errors: validation.errors,
       };
     }
 
-    // Ensure accounts have tagIds array (backward compatibility)
+    // Ensure accounts have tagIds array and items array (backward compatibility)
     const accountsWithTags = data.accounts.map((acc) => ({
       ...acc,
       tagIds: acc.tagIds || [],
+      items: acc.items || [],
     }));
 
     // Ensure chains have color (backward compatibility)
@@ -196,19 +200,59 @@ export async function importFromJSON(file: File): Promise<ImportResult> {
       color: chain.color || 'french-blue',
     }));
 
+    // Ensure tags have entityType (backward compatibility - default to 'account')
+    const tagsWithEntityType = data.tags
+      ? data.tags.map((tag) => ({
+          ...tag,
+          entityType: tag.entityType || 'account',
+        }))
+      : [];
+
     // Save to storage
     setToStorage(STORAGE_KEYS.ACCOUNTS, accountsWithTags);
     setToStorage(STORAGE_KEYS.CHAINS, chainsWithColor);
-    if (data.tags) {
-      setToStorage(STORAGE_KEYS.TAGS, data.tags);
+    if (tagsWithEntityType.length > 0) {
+      setToStorage(STORAGE_KEYS.TAGS, tagsWithEntityType);
     }
     if (data.rules) {
-      // Ensure rules have frequency field (backward compatibility)
+      // Ensure rules have frequency and mode fields (backward compatibility)
       const rulesWithFrequency = data.rules.map((rule) => ({
         ...rule,
         frequency: rule.frequency || 'weekly',
+        targets: rule.targets.map((t) => ({
+          ...t,
+          mode: t.mode || 'percentage',
+        })),
       }));
       setToStorage(STORAGE_KEYS.RULES, rulesWithFrequency);
+    }
+
+    // Import transactions if present
+    let transactionCount = 0;
+    if (data.transactions) {
+      setToStorage(STORAGE_KEYS.TRANSACTIONS, data.transactions);
+      // Count transactions
+      Object.values(data.transactions.years || {}).forEach((year) => {
+        Object.values(year.months).forEach((monthTxns) => {
+          transactionCount += (monthTxns as unknown[]).length;
+        });
+      });
+    }
+
+    // Import settings if present (custom colors, fonts, saved descriptions)
+    if (data.settings) {
+      if (data.settings.customColors && Array.isArray(data.settings.customColors)) {
+        setToStorage(STORAGE_KEYS.CUSTOM_COLORS, data.settings.customColors);
+      }
+      if (data.settings.fontSettings) {
+        setToStorage(STORAGE_KEYS.ACTIVE_FONT, data.settings.fontSettings);
+      }
+      if (data.settings.customFonts && Array.isArray(data.settings.customFonts)) {
+        setToStorage(STORAGE_KEYS.CUSTOM_FONTS, data.settings.customFonts);
+      }
+      if (data.settings.savedChainDescriptions && Array.isArray(data.settings.savedChainDescriptions)) {
+        setToStorage(STORAGE_KEYS.SAVED_CHAIN_DESCRIPTIONS, data.settings.savedChainDescriptions);
+      }
     }
 
     return {
@@ -216,8 +260,9 @@ export async function importFromJSON(file: File): Promise<ImportResult> {
       message: 'Import successful',
       accountsImported: data.accounts.length,
       chainsImported: data.chains.length,
-      tagsImported: data.tags?.length || 0,
+      tagsImported: tagsWithEntityType.length,
       rulesImported: data.rules?.length || 0,
+      transactionsImported: transactionCount,
       errors: [],
     };
   } catch (error) {
@@ -228,6 +273,7 @@ export async function importFromJSON(file: File): Promise<ImportResult> {
       chainsImported: 0,
       tagsImported: 0,
       rulesImported: 0,
+      transactionsImported: 0,
       errors: [error instanceof Error ? error.message : 'Unknown error'],
     };
   }
@@ -259,6 +305,7 @@ export async function importFromExcel(file: File): Promise<ImportResult> {
         chainsImported: 0,
         tagsImported: 0,
         rulesImported: 0,
+        transactionsImported: 0,
         errors,
       };
     }
@@ -276,9 +323,33 @@ export async function importFromExcel(file: File): Promise<ImportResult> {
       color: String(row['Color'] || 'french-blue') as AccountColor,
       customColor: row['Custom Color'] ? String(row['Custom Color']) : undefined,
       tagIds: row['Tag IDs'] ? String(row['Tag IDs']).split(',').map(id => id.trim()).filter(Boolean) : [],
+      items: [], // Will be populated from Account Items sheet
       createdAt: String(row['Created At'] || new Date().toISOString()),
       updatedAt: String(row['Updated At'] || new Date().toISOString()),
     }));
+
+    // Parse Account Items sheet if exists
+    if (workbook.SheetNames.includes('Account Items')) {
+      const accountItemsSheet = workbook.Sheets['Account Items'];
+      const accountItemsRaw = XLSX.utils.sheet_to_json<Record<string, unknown>>(accountItemsSheet);
+      
+      accountItemsRaw.forEach((row) => {
+        const accountId = String(row['Account ID'] || '');
+        const item: AccountItem = {
+          id: String(row['Item ID'] || ''),
+          name: String(row['Item Name'] || ''),
+          cost: Number(row['Item Cost']) || 0,
+        };
+        
+        const account = accounts.find(a => a.id === accountId);
+        if (account) {
+          if (!account.items) {
+            account.items = [];
+          }
+          account.items.push(item);
+        }
+      });
+    }
 
     // Parse Chains sheet
     const chainsSheet = workbook.Sheets['Chains'];
@@ -316,6 +387,7 @@ export async function importFromExcel(file: File): Promise<ImportResult> {
         defaultLimit: Number(row['Default Limit']) || 2000,
         hasBufferAccount: row['Has Buffer'] === 'true' || row['Has Buffer'] === true,
         bufferAmount: Number(row['Buffer Amount']) || 0,
+        bufferAccountId: row['Buffer Account ID'] ? String(row['Buffer Account ID']) : undefined,
         accounts: chainAccountsMap.get(chainId) || [],
         distributionMode: distributionMode as 'sequential' | 'percentage',
         color: (String(row['Color'] || 'french-blue')) as AccountColor,
@@ -336,6 +408,7 @@ export async function importFromExcel(file: File): Promise<ImportResult> {
         name: String(row['Name'] || ''),
         color: (String(row['Color'] || 'french-blue')) as AccountColor,
         customColor: row['Custom Color'] ? String(row['Custom Color']) : undefined,
+        entityType: (String(row['Entity Type'] || 'account')) as Tag['entityType'],
         createdAt: String(row['Created At'] || new Date().toISOString()),
         updatedAt: String(row['Updated At'] || new Date().toISOString()),
       }));
@@ -354,6 +427,8 @@ export async function importFromExcel(file: File): Promise<ImportResult> {
         const target: AllocationTarget = {
           accountId: String(row['Target Account ID'] || ''),
           percentage: Number(row['Percentage']) || 0,
+          amount: row['Amount'] ? Number(row['Amount']) : undefined,
+          mode: (String(row['Mode'] || 'percentage')) as AllocationTarget['mode'],
         };
         
         if (!ruleTargetsMap.has(ruleId)) {
@@ -410,6 +485,7 @@ export async function importFromExcel(file: File): Promise<ImportResult> {
         chainsImported: 0,
         tagsImported: 0,
         rulesImported: 0,
+        transactionsImported: 0,
         errors,
       };
     }
@@ -431,6 +507,7 @@ export async function importFromExcel(file: File): Promise<ImportResult> {
       chainsImported: chains.length,
       tagsImported: tags.length,
       rulesImported: rules.length,
+      transactionsImported: 0,
       errors: [],
     };
   } catch (error) {
@@ -441,6 +518,7 @@ export async function importFromExcel(file: File): Promise<ImportResult> {
       chainsImported: 0,
       tagsImported: 0,
       rulesImported: 0,
+      transactionsImported: 0,
       errors: [error instanceof Error ? error.message : 'Unknown error'],
     };
   }
@@ -464,6 +542,7 @@ export async function importFromFile(file: File): Promise<ImportResult> {
       chainsImported: 0,
       tagsImported: 0,
       rulesImported: 0,
+      transactionsImported: 0,
       errors: ['Please upload a .json or .xlsx file'],
     };
   }

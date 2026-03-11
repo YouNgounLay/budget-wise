@@ -18,11 +18,11 @@ interface HeaderProps {
 
 export function Header({ isMobileMenuOpen, onToggleMobileMenu, onDataChange, onStartTutorial }: HeaderProps) {
   return (
-    <header className="header bg-surface border-b border-border sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <a href="/" className="flex items-center gap-2">
+    <header className="header bg-surface border-b border-border sticky top-0 z-40 w-full">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 max-w-7xl mx-auto">
+          {/* Logo - aligned left */}
+          <a href="/" className="flex items-center gap-2 flex-shrink-0">
             {/* Replacing emoji with SVG icon */}
             <svg className="w-7 h-7 text-french-blue" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" aria-hidden="true">
               <rect x="3" y="6" width="18" height="12" rx="4" fill="currentColor" opacity="0.15" />
@@ -34,13 +34,13 @@ export function Header({ isMobileMenuOpen, onToggleMobileMenu, onDataChange, onS
             </span>
           </a>
 
-          {/* Search Bar - hidden on mobile */}
-          <div className="hidden md:block flex-1 max-w-md mx-8">
+          {/* Search Bar - hidden on mobile, centered */}
+          <div className="hidden md:flex flex-1 justify-center max-w-md mx-8">
             <SearchBar />
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center gap-2">
+          {/* Actions - aligned right */}
+          <div className="flex items-center gap-2 flex-shrink-0">
             {/* Settings Button */}
             <SettingsModal
               onStartTutorial={onStartTutorial}
@@ -88,7 +88,7 @@ export function Header({ isMobileMenuOpen, onToggleMobileMenu, onDataChange, onS
         </div>
         
         {/* Mobile Search Bar */}
-        <div className="md:hidden pb-3">
+        <div className="md:hidden pb-3 max-w-7xl mx-auto">
           <SearchBar />
         </div>
       </div>

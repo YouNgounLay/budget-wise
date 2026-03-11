@@ -1,9 +1,9 @@
 /**
  * Tag Service
- * Handles CRUD operations for tags
+ * Handles CRUD operations for tags (both account and transaction tags)
  */
 
-import { Tag, CreateTagDTO, UpdateTagDTO } from '@/app/types/tag';
+import { Tag, CreateTagDTO, UpdateTagDTO, TagEntityType } from '@/app/types/tag';
 import { getFromStorage, setToStorage, STORAGE_KEYS } from '@/app/utils/storage';
 import { generateId, getCurrentTimestamp } from '@/app/utils/helpers';
 
@@ -11,7 +11,12 @@ import { generateId, getCurrentTimestamp } from '@/app/utils/helpers';
  * Get all tags from storage
  */
 export function getAllTags(): Tag[] {
-  return getFromStorage<Tag[]>(STORAGE_KEYS.TAGS) || [];
+  const tags = getFromStorage<Tag[]>(STORAGE_KEYS.TAGS) || [];
+  // Migrate existing tags without entityType to account tags
+  return tags.map((tag) => ({
+    ...tag,
+    entityType: tag.entityType || 'account',
+  }));
 }
 
 /**
@@ -19,6 +24,13 @@ export function getAllTags(): Tag[] {
  */
 export function saveAllTags(tags: Tag[]): boolean {
   return setToStorage(STORAGE_KEYS.TAGS, tags);
+}
+
+/**
+ * Get tags by entity type
+ */
+export function getTagsByEntityType(entityType: TagEntityType): Tag[] {
+  return getAllTags().filter((tag) => tag.entityType === entityType);
 }
 
 /**
@@ -41,6 +53,7 @@ export function createTag(data: CreateTagDTO): Tag {
     name: data.name,
     color: data.color,
     customColor: data.customColor,
+    entityType: data.entityType,
     createdAt: now,
     updatedAt: now,
   };

@@ -184,13 +184,29 @@ export function depositToChainSequential(
   // If there's remaining amount, handle buffer account
   let bufferDeposit: DepositResult['bufferDeposit'] | undefined;
   if (remainingAmount > 0) {
-    // Auto-enable buffer if there's overflow
-    const newBufferBalance = (chain.bufferAmount || 0) + remainingAmount;
-    bufferDeposit = {
-      amount: remainingAmount,
-      newBufferBalance,
-    };
-    remainingAmount = 0;
+    // Check if using an existing account as buffer
+    if (chain.bufferAccountId) {
+      const bufferAccount = accounts.find(a => a.id === chain.bufferAccountId);
+      if (bufferAccount) {
+        // Deposit to the buffer account (no limit for buffer)
+        const newBalance = bufferAccount.amount + remainingAmount;
+        deposits.push({
+          accountId: bufferAccount.id,
+          accountName: bufferAccount.name,
+          amount: remainingAmount,
+          newBalance,
+        });
+        remainingAmount = 0;
+      }
+    } else {
+      // Use virtual buffer (infinite capacity)
+      const newBufferBalance = (chain.bufferAmount || 0) + remainingAmount;
+      bufferDeposit = {
+        amount: remainingAmount,
+        newBufferBalance,
+      };
+      remainingAmount = 0;
+    }
   }
 
   const totalDeposited = amount - remainingAmount;

@@ -15,7 +15,7 @@ import React, {
   useRef,
   ReactNode,
 } from 'react';
-import { Tag, CreateTagDTO, UpdateTagDTO } from '@/app/types/tag';
+import { Tag, CreateTagDTO, UpdateTagDTO, TagEntityType } from '@/app/types/tag';
 import { getAllTags, saveAllTags } from '@/app/services/tagService';
 import { generateId, getCurrentTimestamp } from '@/app/utils/helpers';
 
@@ -43,6 +43,7 @@ interface TagContextType {
   deleteTag: (id: string) => boolean;
   getTagById: (id: string) => Tag | undefined;
   getTagsByIds: (ids: string[]) => Tag[];
+  getTagsByEntityType: (entityType: TagEntityType) => Tag[];
 }
 
 // Initial state
@@ -122,6 +123,7 @@ export function TagProvider({ children }: { children: ReactNode }) {
       name: data.name,
       color: data.color,
       customColor: data.customColor,
+      entityType: data.entityType,
       createdAt: now,
       updatedAt: now,
     };
@@ -172,6 +174,13 @@ export function TagProvider({ children }: { children: ReactNode }) {
     [state.tags]
   );
 
+  const getTagsByEntityType = useCallback(
+    (entityType: TagEntityType): Tag[] => {
+      return state.tags.filter((t) => t.entityType === entityType);
+    },
+    [state.tags]
+  );
+
   const contextValue = useMemo(
     () => ({
       state,
@@ -180,8 +189,9 @@ export function TagProvider({ children }: { children: ReactNode }) {
       deleteTag: deleteTagAction,
       getTagById,
       getTagsByIds,
+      getTagsByEntityType,
     }),
-    [state, createTagAction, updateTagAction, deleteTagAction, getTagById, getTagsByIds]
+    [state, createTagAction, updateTagAction, deleteTagAction, getTagById, getTagsByIds, getTagsByEntityType]
   );
 
   return <TagContext.Provider value={contextValue}>{children}</TagContext.Provider>;

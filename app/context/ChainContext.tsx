@@ -20,13 +20,11 @@ import {
   CreateChainDTO,
   UpdateChainDTO,
   ChainAccountConfig,
-  ChainDistributionMode,
 } from '@/app/types/chain';
 import { getAllChains, saveAllChains } from '@/app/services/chainService';
 import { generateId, getCurrentTimestamp } from '@/app/utils/helpers';
 
 const DEFAULT_LIMIT = 2000;
-const DEFAULT_PERCENTAGE = 0;
 
 // State type
 interface ChainState {
@@ -54,8 +52,7 @@ interface ChainContextType {
   addAccountToChain: (
     chainId: string,
     accountId: string,
-    limit?: number,
-    percentage?: number
+    limit?: number
   ) => Chain | null;
   removeAccountFromChain: (chainId: string, accountId: string) => Chain | null;
   reorderChainAccounts: (chainId: string, newOrder: string[]) => Chain | null;
@@ -64,15 +61,7 @@ interface ChainContextType {
     accountId: string,
     newLimit: number
   ) => Chain | null;
-  updateAccountPercentageInChain: (
-    chainId: string,
-    accountId: string,
-    newPercentage: number
-  ) => Chain | null;
-  toggleBufferAccount: (chainId: string) => Chain | null;
-  updateBufferAmount: (chainId: string, newAmount: number) => Chain | null;
-  toggleDistributionMode: (chainId: string) => Chain | null;
-  setDistributionMode: (chainId: string, mode: ChainDistributionMode) => Chain | null;
+  setOverflowAccount: (chainId: string, accountId: string | null) => Chain | null;
 }
 
 // Initial state
@@ -152,12 +141,8 @@ export function ChainProvider({ children }: { children: ReactNode }) {
       name: data.name,
       description: data.description,
       accounts: [],
-      hasBufferAccount: false,
-      bufferAmount: 0,
+      overflowAccountId: null,
       defaultLimit: data.defaultLimit ?? DEFAULT_LIMIT,
-      distributionMode: 'sequential',
-      color: data.color || 'french-blue',
-      customColor: data.customColor,
       createdAt: timestamp,
       updatedAt: timestamp,
     };
@@ -193,21 +178,22 @@ export function ChainProvider({ children }: { children: ReactNode }) {
   const addAccountToChain = useCallback((
     chainId: string,
     accountId: string,
-    limit?: number,
-    percentage?: number
+    limit?: number
   ): Chain | null => {
     const chain = state.chains.find((c) => c.id === chainId);
     if (!chain) return null;
 
-    // Check if account already exists
-    if (chain.accounts.some((acc) => acc.accountId === accountId)) {
+    // Check if account already exists or is the overflow account
+    if (
+      chain.accounts.some((acc) => acc.accountId === accountId) ||
+      chain.overflowAccountId === accountId
+    ) {
       return null;
     }
 
     const newAccountConfig: ChainAccountConfig = {
       accountId,
       limit: limit ?? chain.defaultLimit,
-      percentage: percentage ?? DEFAULT_PERCENTAGE,
     };
 
     const updatedChain: Chain = {
@@ -296,95 +282,21 @@ export function ChainProvider({ children }: { children: ReactNode }) {
     return updatedChain;
   }, [state.chains]);
 
-  const toggleBufferAccount = useCallback((chainId: string): Chain | null => {
+  const setOverflowAccount = useCallback((
+    chainId: string,
+    accountId: string | null
+  ): Chain | null => {
     const chain = state.chains.find((c) => c.id === chainId);
     if (!chain) return null;
 
-    // Can only disable buffer if it has no funds
-    if (chain.hasBufferAccount && chain.bufferAmount > 0) {
-      return null; // Cannot disable buffer with funds in it
+    // If setting an account, ensure it's not already in the chain's regular accounts
+    if (accountId && chain.accounts.some((acc) => acc.accountId === accountId)) {
+      return null;
     }
 
     const updatedChain: Chain = {
       ...chain,
-      hasBufferAccount: !chain.hasBufferAccount,
-      updatedAt: getCurrentTimestamp(),
-    };
-
-    dispatch({ type: 'UPDATE_CHAIN', payload: updatedChain });
-    return updatedChain;
-  }, [state.chains]);
-
-  const updateBufferAmount = useCallback((
-    chainId: string,
-    newAmount: number
-  ): Chain | null => {
-    const chain = state.chains.find((c) => c.id === chainId);
-    if (!chain) return null;
-
-    // Auto-enable buffer if receiving funds
-    const shouldEnableBuffer = newAmount > 0;
-
-    const updatedChain: Chain = {
-      ...chain,
-      bufferAmount: newAmount,
-      hasBufferAccount: shouldEnableBuffer || chain.hasBufferAccount,
-      updatedAt: getCurrentTimestamp(),
-    };
-
-    dispatch({ type: 'UPDATE_CHAIN', payload: updatedChain });
-    return updatedChain;
-  }, [state.chains]);
-
-  const updateAccountPercentageInChain = useCallback((
-    chainId: string,
-    accountId: string,
-    newPercentage: number
-  ): Chain | null => {
-    const chain = state.chains.find((c) => c.id === chainId);
-    if (!chain) return null;
-
-    const updatedAccounts = chain.accounts.map((acc) =>
-      acc.accountId === accountId ? { ...acc, percentage: newPercentage } : acc
-    );
-
-    const updatedChain: Chain = {
-      ...chain,
-      accounts: updatedAccounts,
-      updatedAt: getCurrentTimestamp(),
-    };
-
-    dispatch({ type: 'UPDATE_CHAIN', payload: updatedChain });
-    return updatedChain;
-  }, [state.chains]);
-
-  const toggleDistributionMode = useCallback((chainId: string): Chain | null => {
-    const chain = state.chains.find((c) => c.id === chainId);
-    if (!chain) return null;
-
-    const newMode: ChainDistributionMode = 
-      chain.distributionMode === 'sequential' ? 'percentage' : 'sequential';
-
-    const updatedChain: Chain = {
-      ...chain,
-      distributionMode: newMode,
-      updatedAt: getCurrentTimestamp(),
-    };
-
-    dispatch({ type: 'UPDATE_CHAIN', payload: updatedChain });
-    return updatedChain;
-  }, [state.chains]);
-
-  const setDistributionMode = useCallback((
-    chainId: string,
-    mode: ChainDistributionMode
-  ): Chain | null => {
-    const chain = state.chains.find((c) => c.id === chainId);
-    if (!chain) return null;
-
-    const updatedChain: Chain = {
-      ...chain,
-      distributionMode: mode,
+      overflowAccountId: accountId,
       updatedAt: getCurrentTimestamp(),
     };
 
@@ -402,11 +314,7 @@ export function ChainProvider({ children }: { children: ReactNode }) {
     removeAccountFromChain,
     reorderChainAccounts,
     updateAccountLimitInChain,
-    updateAccountPercentageInChain,
-    toggleBufferAccount,
-    updateBufferAmount,
-    toggleDistributionMode,
-    setDistributionMode,
+    setOverflowAccount,
   }), [
     state,
     createChain,
@@ -417,11 +325,7 @@ export function ChainProvider({ children }: { children: ReactNode }) {
     removeAccountFromChain,
     reorderChainAccounts,
     updateAccountLimitInChain,
-    updateAccountPercentageInChain,
-    toggleBufferAccount,
-    updateBufferAmount,
-    toggleDistributionMode,
-    setDistributionMode,
+    setOverflowAccount,
   ]);
 
   return (

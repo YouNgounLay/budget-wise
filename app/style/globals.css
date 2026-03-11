@@ -256,6 +256,11 @@ html.dark ::-webkit-scrollbar-thumb:hover {
   outline-offset: 2px;
 }
 
+/* Override focus-visible for search bar input - parent handles visual focus state */
+.search-input:focus-visible {
+  outline: none;
+}
+
 /* Text utilities */
 .text-jet-black {
   color: var(--jet-black);

@@ -7,7 +7,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { MainLayout } from '@/app/components/layout';
-import { Card, Button, Modal } from '@/app/components/shared';
+import { Card, Button, Modal, DeleteConfirmationModal } from '@/app/components/shared';
 import { useAccounts } from '@/app/context';
 import { useRules } from '@/app/context';
 import { AccountRule, DAY_OF_WEEK_LABELS, DayOfWeek, RuleExecutionResult, AllocationTarget, RuleFrequency, RULE_FREQUENCY_LABELS, RULE_FREQUENCY_OPTIONS, formatNextTriggerDate } from '@/app/types/rule';
@@ -24,6 +24,7 @@ export default function RulesPage() {
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
   const [executionResult, setExecutionResult] = useState<RuleExecutionResult | null>(null);
   const [isExecuteModalOpen, setIsExecuteModalOpen] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   
   // Form state for creating new rules
   const [formDayOfWeek, setFormDayOfWeek] = useState<DayOfWeek>(0);
@@ -65,8 +66,13 @@ export default function RulesPage() {
   };
 
   const handleDeleteRule = (ruleId: string) => {
-    if (confirm('Are you sure you want to delete this rule?')) {
-      deleteRule(ruleId);
+    setDeleteTargetId(ruleId);
+  };
+
+  const confirmDeleteRule = () => {
+    if (deleteTargetId) {
+      deleteRule(deleteTargetId);
+      setDeleteTargetId(null);
     }
   };
 
@@ -104,7 +110,7 @@ export default function RulesPage() {
       (a) => a.id !== selectedAccountId && !formTargets.some((t) => t.accountId === a.id)
     );
     if (availableAccounts.length > 0) {
-      setFormTargets([...formTargets, { accountId: availableAccounts[0].id, percentage: 0 }]);
+      setFormTargets([...formTargets, { accountId: availableAccounts[0].id, percentage: 0, mode: 'percentage' }]);
     }
   };
 
@@ -370,7 +376,7 @@ export default function RulesPage() {
               onChange={(e) => setFormThreshold(e.target.value)}
               placeholder="e.g. 1000"
               min="0"
-              step="0.01"
+              step="100"
               className="w-full px-3 py-2 rounded-lg border border-border bg-surface text-foreground"
             />
             <p className="text-xs text-muted mt-1">
@@ -425,6 +431,7 @@ export default function RulesPage() {
                       onChange={(e) => updateTarget(index, 'percentage', e.target.value)}
                       min="0"
                       max="100"
+                      step="10"
                       className="w-20 px-3 py-2 rounded-lg border border-border bg-surface text-foreground text-sm"
                     />
                     <span className="text-sm text-muted">%</span>
@@ -439,8 +446,8 @@ export default function RulesPage() {
                     </button>
                   </div>
                 ))}
-                <p className={`text-sm ${totalPercentage === 100 ? 'text-emerald-600' : 'text-rose-500'}`}>
-                  Total: {totalPercentage}% {totalPercentage !== 100 && '(must equal 100%)'}
+                <p className={`text-sm ${totalPercentage > 0 && totalPercentage <= 100 ? 'text-emerald-600' : 'text-rose-500'}`}>
+                  Total: {totalPercentage}% {totalPercentage > 100 && '(cannot exceed 100%)'}
                 </p>
               </div>
             )}
@@ -459,7 +466,7 @@ export default function RulesPage() {
             </Button>
             <Button
               onClick={handleCreateRule}
-              disabled={!selectedAccountId || !formThreshold || formTargets.length === 0 || totalPercentage !== 100}
+              disabled={!selectedAccountId || !formThreshold || formTargets.length === 0 || totalPercentage <= 0 || totalPercentage > 100}
             >
               Create Rule
             </Button>
@@ -521,6 +528,15 @@ export default function RulesPage() {
           </div>
         )}
       </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={!!deleteTargetId}
+        onClose={() => setDeleteTargetId(null)}
+        onConfirm={confirmDeleteRule}
+        title="Delete Rule"
+        message="Are you sure you want to delete this rule?"
+      />
     </MainLayout>
   );
 }

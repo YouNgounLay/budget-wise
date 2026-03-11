@@ -80,12 +80,15 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     content: [
       'Each account card has deposit and withdraw buttons:',
       '',
-      '💰 Deposit: Add money to an account',
-      '💸 Withdraw: Remove money from an account',
+      '[+] Deposit: Add money to an account',
+      '[-] Withdraw: Remove money from an account',
+      '',
+      'You can also add an optional description to track',
+      'what each deposit or withdrawal was for.',
       '',
       'Try it out:',
       '1. Click the deposit button (↓) on any account',
-      '2. Enter $300 and confirm',
+      '2. Enter $300, add a description, and confirm',
       '3. Click the withdraw button (↑)',
       '4. Enter $100 and confirm',
       '',
@@ -98,17 +101,25 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     description: 'Chains automatically allocate funds across accounts.',
     targetPage: '/chains',
     content: [
-      '🔗 Chains are powerful! They let you:',
+      'Chains are powerful! They let you:',
       '',
       '• Set a priority order for your accounts',
       '• Automatically distribute deposits across accounts',
+      '• Withdraw in reverse order (from last to first)',
       '• Define limits for each account in the chain',
+      '• Add descriptions to chain deposits (save for future use!)',
+      '• Set up a buffer account for overflow funds',
+      '',
+      'Buffer Account Options:',
+      '• Virtual Buffer: Unlimited capacity, stores overflow',
+      '• Use Existing Account: Select any account not in chain',
       '',
       'Create a chain with this order:',
       '1. Grocery → 2. Rent → 3. Mortgage → 4. Emergency Fund → 5. Excess Saving',
       '',
       'When you deposit to this chain, funds flow from first to last,',
       'filling each account up to its limit before moving to the next.',
+      'When you withdraw, funds are taken from last to first.',
     ],
   },
   {
@@ -117,7 +128,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     description: 'Rules automate your fund allocation.',
     targetPage: '/rules',
     content: [
-      '📅 Rules run automatically on a schedule:',
+      'Rules run automatically on a schedule:',
       '',
       '• Weekly - Every week on a specific day',
       '• Fortnightly - Every two weeks',
@@ -136,40 +147,68 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: 'tags-system',
     title: 'Step 6: Organize with Tags',
-    description: 'Use tags to categorize your accounts.',
+    description: 'Use tags to categorize your accounts and transactions.',
     targetPage: '/tags',
     content: [
-      '🏷️ Tags help you organize accounts:',
+      'Tags help you organize accounts and transactions:',
       '',
-      '• Create custom tags with colors',
-      '• Assign multiple tags to each account',
-      '• Filter and group accounts by tags',
+      '• Create account tags and transaction tags',
+      '• Assign tags when creating or editing accounts',
+      '• Assign tags when depositing or withdrawing',
       '',
       'Example tags:',
-      '• "Essential" - for must-pay bills',
-      '• "Savings" - for saving goals',
-      '• "Discretionary" - for optional spending',
+      '• "Essential" - for must-pay bills (account tag)',
+      '• "Savings" - for saving goals (account tag)',
+      '• "Groceries" - for grocery expenses (transaction tag)',
       '',
-      'Click on any account to assign tags!',
+      'Create tags here, then assign them in account/transaction forms!',
+    ],
+  },
+  {
+    id: 'transactions',
+    title: 'Step 7: Track Transactions',
+    description: 'View your transaction history.',
+    targetPage: '/transactions',
+    content: [
+      'Every deposit and withdrawal is tracked automatically!',
+      '',
+      'The Transactions page shows:',
+      '• All deposits and withdrawals',
+      '• Summary statistics (total in/out/net)',
+      '• Filter by year, month, type, or account',
+      '',
+      'You can also:',
+      '• Delete individual transactions',
+      '• Clear an entire month or year\'s history',
+      '• Apply transaction tags for categorization',
+      '',
+      'This helps you track spending patterns over time.',
     ],
   },
   {
     id: 'complete',
-    title: '🎉 Tutorial Complete!',
+    title: 'Tutorial Complete!',
     description: 'You\'re ready to manage your budget!',
     targetPage: '/',
     content: [
       'Congratulations! You\'ve learned the basics of BudgetWise.',
       '',
-      '📌 Quick recap:',
+      'Quick recap:',
       '• Accounts hold your budget categories',
       '• Chains automatically distribute deposits',
       '• Rules automate periodic transfers',
       '• Tags help organize everything',
+      '• Transactions track your activity history',
       '',
-      'Need help? Click the gear icon (⚙️) and select "Start Tutorial" anytime.',
+      'Customization tips:',
+      '• Change fonts and themes in Settings',
+      '• Use the searchable icon picker for accounts',
+      '• Create custom colors for your accounts',
+      '• Import/export your data anytime',
       '',
-      'Happy budgeting! 💰',
+      'Need help? Click the Settings icon and select "Start Tutorial" anytime.',
+      '',
+      'Happy budgeting!',
     ],
   },
 ];
@@ -180,6 +219,11 @@ interface TutorialState {
   currentStepIndex: number;
   hasCompleted: boolean;
   sampleAccountsCreated: boolean;
+  sampleAccountIds: string[];
+  sampleChainIds: string[];
+  sampleTagIds: string[];
+  sampleRuleIds: string[];
+  hasBackedUpData: boolean;
 }
 
 // Action types
@@ -190,8 +234,13 @@ type TutorialAction =
   | { type: 'PREVIOUS_STEP' }
   | { type: 'GO_TO_STEP'; payload: number }
   | { type: 'COMPLETE_TUTORIAL' }
-  | { type: 'MARK_SAMPLE_ACCOUNTS_CREATED' }
-  | { type: 'LOAD_STATE'; payload: Partial<TutorialState> };
+  | { type: 'MARK_SAMPLE_ACCOUNTS_CREATED'; payload: string[] }
+  | { type: 'LOAD_STATE'; payload: Partial<TutorialState> }
+  | { type: 'CLEAR_SAMPLE_IDS' }
+  | { type: 'ADD_SAMPLE_CHAIN_ID'; payload: string }
+  | { type: 'ADD_SAMPLE_TAG_ID'; payload: string }
+  | { type: 'ADD_SAMPLE_RULE_ID'; payload: string }
+  | { type: 'SET_BACKED_UP'; payload: boolean };
 
 // Context type
 interface TutorialContextType {
@@ -203,7 +252,13 @@ interface TutorialContextType {
   previousStep: () => void;
   goToStep: (index: number) => void;
   completeTutorial: () => void;
-  markSampleAccountsCreated: () => void;
+  markSampleAccountsCreated: (ids: string[]) => void;
+  clearSampleIds: () => void;
+  addSampleChainId: (id: string) => void;
+  addSampleTagId: (id: string) => void;
+  addSampleRuleId: (id: string) => void;
+  backupExistingData: () => void;
+  restoreBackedUpData: () => void;
   isFirstStep: boolean;
   isLastStep: boolean;
   progress: number;
@@ -215,13 +270,18 @@ const initialState: TutorialState = {
   currentStepIndex: 0,
   hasCompleted: false,
   sampleAccountsCreated: false,
+  sampleAccountIds: [],
+  sampleChainIds: [],
+  sampleTagIds: [],
+  sampleRuleIds: [],
+  hasBackedUpData: false,
 };
 
 // Reducer
 function tutorialReducer(state: TutorialState, action: TutorialAction): TutorialState {
   switch (action.type) {
     case 'START_TUTORIAL':
-      return { ...state, isActive: true, currentStepIndex: 0 };
+      return { ...state, isActive: true, currentStepIndex: 0, sampleAccountsCreated: false, sampleAccountIds: [], sampleChainIds: [], sampleTagIds: [], sampleRuleIds: [] };
     case 'STOP_TUTORIAL':
       return { ...state, isActive: false };
     case 'NEXT_STEP':
@@ -242,9 +302,19 @@ function tutorialReducer(state: TutorialState, action: TutorialAction): Tutorial
     case 'COMPLETE_TUTORIAL':
       return { ...state, isActive: false, hasCompleted: true };
     case 'MARK_SAMPLE_ACCOUNTS_CREATED':
-      return { ...state, sampleAccountsCreated: true };
+      return { ...state, sampleAccountsCreated: true, sampleAccountIds: action.payload };
     case 'LOAD_STATE':
       return { ...state, ...action.payload };
+    case 'CLEAR_SAMPLE_IDS':
+      return { ...state, sampleAccountIds: [], sampleChainIds: [], sampleTagIds: [], sampleRuleIds: [], sampleAccountsCreated: false, hasBackedUpData: false };
+    case 'ADD_SAMPLE_CHAIN_ID':
+      return { ...state, sampleChainIds: [...state.sampleChainIds, action.payload] };
+    case 'ADD_SAMPLE_TAG_ID':
+      return { ...state, sampleTagIds: [...state.sampleTagIds, action.payload] };
+    case 'ADD_SAMPLE_RULE_ID':
+      return { ...state, sampleRuleIds: [...state.sampleRuleIds, action.payload] };
+    case 'SET_BACKED_UP':
+      return { ...state, hasBackedUpData: action.payload };
     default:
       return state;
   }
@@ -252,6 +322,7 @@ function tutorialReducer(state: TutorialState, action: TutorialAction): Tutorial
 
 // Storage key for tutorial state
 const TUTORIAL_STORAGE_KEY = 'budgetwise_tutorial';
+const TUTORIAL_BACKUP_KEY = 'budgetwise_tutorial_backup';
 
 // Create context
 const TutorialContext = createContext<TutorialContextType | undefined>(undefined);
@@ -281,6 +352,49 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   const isLastStep = state.currentStepIndex === TUTORIAL_STEPS.length - 1;
   const progress = ((state.currentStepIndex + 1) / TUTORIAL_STEPS.length) * 100;
 
+  // Backup existing data before starting tutorial
+  const backupExistingData = useCallback(() => {
+    const accounts = getFromStorage(STORAGE_KEYS.ACCOUNTS);
+    const chains = getFromStorage(STORAGE_KEYS.CHAINS);
+    const tags = getFromStorage(STORAGE_KEYS.TAGS);
+    const rules = getFromStorage(STORAGE_KEYS.RULES);
+    
+    const backup = {
+      accounts: accounts || [],
+      chains: chains || [],
+      tags: tags || [],
+      rules: rules || [],
+      timestamp: Date.now(),
+    };
+    
+    setToStorage(TUTORIAL_BACKUP_KEY as keyof typeof STORAGE_KEYS, backup);
+    dispatch({ type: 'SET_BACKED_UP', payload: true });
+  }, []);
+
+  // Restore backed up data after tutorial
+  const restoreBackedUpData = useCallback(() => {
+    const backup = getFromStorage<{
+      accounts: unknown[];
+      chains: unknown[];
+      tags: unknown[];
+      rules: unknown[];
+    }>(TUTORIAL_BACKUP_KEY as keyof typeof STORAGE_KEYS);
+    
+    if (backup) {
+      setToStorage(STORAGE_KEYS.ACCOUNTS, backup.accounts);
+      setToStorage(STORAGE_KEYS.CHAINS, backup.chains);
+      setToStorage(STORAGE_KEYS.TAGS, backup.tags);
+      setToStorage(STORAGE_KEYS.RULES, backup.rules);
+      
+      // Clear the backup
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(TUTORIAL_BACKUP_KEY);
+      }
+    }
+    
+    dispatch({ type: 'SET_BACKED_UP', payload: false });
+  }, []);
+
   const startTutorial = useCallback(() => {
     dispatch({ type: 'START_TUTORIAL' });
   }, []);
@@ -309,8 +423,24 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'COMPLETE_TUTORIAL' });
   }, []);
 
-  const markSampleAccountsCreated = useCallback(() => {
-    dispatch({ type: 'MARK_SAMPLE_ACCOUNTS_CREATED' });
+  const markSampleAccountsCreated = useCallback((ids: string[]) => {
+    dispatch({ type: 'MARK_SAMPLE_ACCOUNTS_CREATED', payload: ids });
+  }, []);
+
+  const clearSampleIds = useCallback(() => {
+    dispatch({ type: 'CLEAR_SAMPLE_IDS' });
+  }, []);
+
+  const addSampleChainId = useCallback((id: string) => {
+    dispatch({ type: 'ADD_SAMPLE_CHAIN_ID', payload: id });
+  }, []);
+
+  const addSampleTagId = useCallback((id: string) => {
+    dispatch({ type: 'ADD_SAMPLE_TAG_ID', payload: id });
+  }, []);
+
+  const addSampleRuleId = useCallback((id: string) => {
+    dispatch({ type: 'ADD_SAMPLE_RULE_ID', payload: id });
   }, []);
 
   return (
@@ -325,6 +455,12 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
         goToStep,
         completeTutorial,
         markSampleAccountsCreated,
+        clearSampleIds,
+        addSampleChainId,
+        addSampleTagId,
+        addSampleRuleId,
+        backupExistingData,
+        restoreBackedUpData,
         isFirstStep,
         isLastStep,
         progress,

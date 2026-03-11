@@ -9,4 +9,5 @@ export { RuleProvider, useRules } from './RuleContext';
 export { ThemeProvider, useTheme } from './ThemeContext';
 export { ThemeCustomizationProvider, useThemeCustomization } from './ThemeCustomizationContext';
 export { TagProvider, useTags } from './TagContext';
+export { TransactionProvider, useTransactions } from './TransactionContext';
 export { TutorialProvider, useTutorial, TUTORIAL_STEPS } from './TutorialContext';

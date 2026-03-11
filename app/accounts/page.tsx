@@ -7,13 +7,14 @@
 
 import React, { useState } from 'react';
 import { MainLayout } from '../components/layout';
-import { Button } from '../components/shared';
+import { Button, DeleteConfirmationModal } from '../components/shared';
 import {
   AccountList,
   AccountForm,
   TransactionModal,
 } from '../components/account';
 import { useAccounts } from '../context/AccountContext';
+import { useTags } from '../context/TagContext';
 import { Account, CreateAccountDTO } from '../types/account';
 import { formatCurrency } from '../utils/helpers';
 
@@ -27,11 +28,22 @@ export default function AccountsPage() {
     withdrawFromAccount,
   } = useAccounts();
 
+  const {
+    state: tagState,
+    createTag,
+    getTagsByEntityType,
+  } = useTags();
+
+  // Get tags by type
+  const accountTags = getTagsByEntityType('account');
+  const transactionTags = getTagsByEntityType('transaction');
+
   // Modal states
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | undefined>();
   const [transactionAccount, setTransactionAccount] = useState<Account | null>(null);
   const [transactionType, setTransactionType] = useState<'deposit' | 'withdraw'>('deposit');
+  const [deleteTarget, setDeleteTarget] = useState<Account | null>(null);
 
   // Calculate stats
   const totalBalance = accountState.accounts.reduce((sum, acc) => sum + acc.amount, 0);
@@ -56,8 +68,13 @@ export default function AccountsPage() {
   };
 
   const handleDelete = (account: Account) => {
-    if (confirm(`Are you sure you want to delete "${account.name}"? This action cannot be undone.`)) {
-      deleteAccount(account.id);
+    setDeleteTarget(account);
+  };
+
+  const confirmDelete = () => {
+    if (deleteTarget) {
+      deleteAccount(deleteTarget.id);
+      setDeleteTarget(null);
     }
   };
 
@@ -71,11 +88,11 @@ export default function AccountsPage() {
     setTransactionType('withdraw');
   };
 
-  const handleTransaction = (accountId: string, amount: number) => {
+  const handleTransaction = (accountId: string, amount: number, tagIds?: string[], description?: string) => {
     if (transactionType === 'deposit') {
-      depositToAccount(accountId, amount);
+      depositToAccount(accountId, amount, tagIds, description);
     } else {
-      withdrawFromAccount(accountId, amount);
+      withdrawFromAccount(accountId, amount, tagIds, description);
     }
   };
 
@@ -144,7 +161,11 @@ export default function AccountsPage() {
           setEditingAccount(undefined);
         }}
         onSubmit={editingAccount ? handleUpdate : handleCreate}
+        onDelete={editingAccount ? () => handleDelete(editingAccount) : undefined}
         account={editingAccount}
+        existingAccounts={accountState.accounts}
+        availableTags={accountTags}
+        onCreateTag={createTag}
       />
 
       {/* Transaction Modal */}
@@ -154,6 +175,18 @@ export default function AccountsPage() {
         account={transactionAccount}
         type={transactionType}
         onSubmit={handleTransaction}
+        availableTags={transactionTags}
+        onCreateTag={createTag}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+        title="Delete Account"
+        message="Are you sure you want to delete this account?"
+        itemName={deleteTarget?.name}
       />
     </MainLayout>
   );

@@ -16,6 +16,7 @@ interface ChainListProps {
   onEdit?: (chain: Chain) => void;
   onDelete?: (chain: Chain) => void;
   onDeposit?: (chain: Chain) => void;
+  onWithdraw?: (chain: Chain) => void;
   emptyMessage?: string;
 }
 
@@ -25,6 +26,7 @@ export function ChainList({
   onEdit,
   onDelete,
   onDeposit,
+  onWithdraw,
   emptyMessage = 'No chains yet. Create your first chain to start organizing your deposits!',
 }: ChainListProps) {
   if (chains.length === 0) {
@@ -50,6 +52,7 @@ export function ChainList({
           onEdit={onEdit ? () => onEdit(chain) : undefined}
           onDelete={onDelete ? () => onDelete(chain) : undefined}
           onDeposit={onDeposit ? () => onDeposit(chain) : undefined}
+          onWithdraw={onWithdraw ? () => onWithdraw(chain) : undefined}
         />
       ))}
     </div>

@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Tag, CreateTagDTO } from '@/app/types/tag';
+import { Tag, CreateTagDTO, TagEntityType } from '@/app/types/tag';
 import { AccountColor, ACCOUNT_COLORS } from '@/app/types/account';
 import { TagBadge } from './TagBadge';
 import { Button, Input } from '@/app/components/shared';
@@ -18,6 +18,7 @@ interface TagPickerProps {
   onRemoveTag: (tagId: string) => void;
   onCreateTag: (data: CreateTagDTO) => void;
   label?: string;
+  entityType?: TagEntityType;
 }
 
 const QUICK_COLORS: AccountColor[] = [
@@ -38,6 +39,7 @@ export function TagPicker({
   onRemoveTag,
   onCreateTag,
   label = 'Tags',
+  entityType = 'account',
 }: TagPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -72,6 +74,7 @@ export function TagPicker({
     onCreateTag({
       name: newTagName.trim(),
       color: newTagColor,
+      entityType,
     });
     
     setNewTagName('');

@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Tag, CreateTagDTO } from '@/app/types/tag';
+import { Tag, CreateTagDTO, TagEntityType } from '@/app/types/tag';
 import { AccountColor, ACCOUNT_COLORS } from '@/app/types/account';
 import { Button, Input, Modal } from '@/app/components/shared';
 import { ColorPicker } from '@/app/components/account/ColorPicker';
@@ -16,15 +16,17 @@ interface TagFormProps {
   onClose: () => void;
   onSubmit: (data: CreateTagDTO) => void;
   tag?: Tag;
+  entityType?: TagEntityType; // Default to 'account' for backwards compatibility
 }
 
-const defaultFormData: CreateTagDTO = {
-  name: '',
-  color: 'french-blue',
-  customColor: '#4a86e8',
-};
+export function TagForm({ isOpen, onClose, onSubmit, tag, entityType = 'account' }: TagFormProps) {
+  const defaultFormData: CreateTagDTO = {
+    name: '',
+    color: 'french-blue',
+    customColor: '#4a86e8',
+    entityType,
+  };
 
-export function TagForm({ isOpen, onClose, onSubmit, tag }: TagFormProps) {
   const [formData, setFormData] = useState<CreateTagDTO>(defaultFormData);
   const [errors, setErrors] = useState<Partial<Record<keyof CreateTagDTO, string>>>({});
 
@@ -35,12 +37,13 @@ export function TagForm({ isOpen, onClose, onSubmit, tag }: TagFormProps) {
         name: tag.name,
         color: tag.color,
         customColor: tag.customColor || '#4a86e8',
+        entityType: tag.entityType,
       });
     } else if (!isOpen) {
       setFormData(defaultFormData);
       setErrors({});
     }
-  }, [isOpen, tag]);
+  }, [isOpen, tag, entityType]);
 
   const handleChange = (field: keyof CreateTagDTO, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));

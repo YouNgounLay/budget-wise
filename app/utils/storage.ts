@@ -9,6 +9,12 @@ const STORAGE_KEYS = {
   CHAINS: 'budget-wise-chains',
   RULES: 'budget-wise-rules',
   TAGS: 'budget-wise-tags',
+  TRANSACTIONS: 'budget-wise-transactions',
+  TRANSACTION_TAGS: 'budget-wise-transaction-tags',
+  CUSTOM_COLORS: 'budget-wise-custom-colors',
+  CUSTOM_FONTS: 'budget-wise-custom-fonts',
+  ACTIVE_FONT: 'budget-wise-active-font',
+  SAVED_CHAIN_DESCRIPTIONS: 'budget-wise-saved-chain-descriptions',
 } as const;
 
 export function getFromStorage<T>(key: string): T | null {

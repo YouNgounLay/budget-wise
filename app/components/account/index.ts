@@ -10,3 +10,4 @@ export { AccountForm } from './AccountForm';
 export { AccountList } from './AccountList';
 export { AccountRulesModal } from './AccountRulesModal';
 export { TransactionModal } from './TransactionModal';
+export { AccountIconDisplay } from './AccountIconDisplay';

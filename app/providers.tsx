@@ -13,6 +13,7 @@ import { TagProvider } from './context/TagContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ThemeCustomizationProvider } from './context/ThemeCustomizationContext';
 import { TutorialProvider } from './context/TutorialContext';
+import { TransactionProvider } from './context/TransactionContext';
 import { TutorialOverlay } from './components/tutorial';
 
 interface ProvidersProps {
@@ -27,10 +28,12 @@ export function Providers({ children }: ProvidersProps) {
           <AccountProvider>
             <ChainProvider>
               <RuleProvider>
-                <TutorialProvider>
-                  {children}
-                  <TutorialOverlay />
-                </TutorialProvider>
+                <TransactionProvider>
+                  <TutorialProvider>
+                    {children}
+                    <TutorialOverlay />
+                  </TutorialProvider>
+                </TransactionProvider>
               </RuleProvider>
             </ChainProvider>
           </AccountProvider>

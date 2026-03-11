@@ -17,8 +17,6 @@ import React, {
 } from 'react';
 import {
   Account,
-  ACCOUNT_COLORS,
-  ACCOUNT_ICONS,
   CreateAccountDTO,
   UpdateAccountDTO,
 } from '@/app/types/account';
@@ -137,10 +135,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       description: data.description,
       amount: data.amount,
       icon: data.icon,
-      customEmoji: data.customEmoji,
       color: data.color,
-      customColor: data.customColor,
-      tagIds: data.tagIds || [],
       createdAt: timestamp,
       updatedAt: timestamp,
     };
@@ -238,7 +233,6 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 // Custom hook
 export function useAccounts(): AccountContextType {
   const context = useContext(AccountContext);
-
   if (context === undefined) {
     throw new Error('useAccounts must be used within an AccountProvider');
   }

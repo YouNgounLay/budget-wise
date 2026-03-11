@@ -155,3 +155,64 @@ export const PRESET_THEMES: Omit<ThemeProfile, 'id' | 'createdAt' | 'updatedAt'>
     },
   },
 ];
+
+/**
+ * Font Configuration Types
+ */
+
+export interface FontConfig {
+  id: string;
+  name: string;
+  family: string;
+  googleFontsUrl?: string;
+  isCustom: boolean;
+}
+
+// Default fonts (built-in)
+export const DEFAULT_FONTS: FontConfig[] = [
+  {
+    id: 'space-grotesk',
+    name: 'Space Grotesk',
+    family: '"Space Grotesk", sans-serif',
+    googleFontsUrl: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap',
+    isCustom: false,
+  },
+  {
+    id: 'jetbrains-mono',
+    name: 'JetBrains Mono',
+    family: '"JetBrains Mono", monospace',
+    googleFontsUrl: 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap',
+    isCustom: false,
+  },
+  {
+    id: 'inter',
+    name: 'Inter',
+    family: '"Inter", sans-serif',
+    googleFontsUrl: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
+    isCustom: false,
+  },
+  {
+    id: 'nunito',
+    name: 'Nunito',
+    family: '"Nunito", sans-serif',
+    googleFontsUrl: 'https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap',
+    isCustom: false,
+  },
+  {
+    id: 'roboto',
+    name: 'Roboto',
+    family: '"Roboto", sans-serif',
+    googleFontsUrl: 'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap',
+    isCustom: false,
+  },
+];
+
+export interface FontSettings {
+  activeFontId: string;
+  customFonts: FontConfig[];
+}
+
+export const DEFAULT_FONT_SETTINGS: FontSettings = {
+  activeFontId: 'inter',
+  customFonts: [],
+};

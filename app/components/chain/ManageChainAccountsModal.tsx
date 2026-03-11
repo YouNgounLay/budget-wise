@@ -3,71 +3,24 @@
 /**
  * Manage Chain Accounts Modal Component
  * Modal for adding, removing, and reordering accounts in a chain
- * @deprecated Use ChainEditModal instead - this component is kept for backwards compatibility
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Chain, ChainDistributionMode } from '@/app/types/chain';
+import { Chain } from '@/app/types/chain';
 import { Account, ACCOUNT_ICONS, ACCOUNT_COLORS } from '@/app/types/account';
 import { formatCurrency } from '@/app/utils/helpers';
 import { Button, Input, Modal, Select } from '@/app/components/shared';
-
-// Custom SVG Icons
-const ChartIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
-  </svg>
-);
-
-const ListIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-  </svg>
-);
-
-const InfinityIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.178 8c5.096 0 5.096 8 0 8-5.095 0-7.133-8-12.739-8-4.303 0-4.303 8 0 8 5.606 0 7.644-8 12.739-8z" />
-  </svg>
-);
-
-const BankIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
-  </svg>
-);
-
-const CheckIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-  </svg>
-);
-
-const CloseIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-  </svg>
-);
-
-const EditIcon = () => (
-  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-  </svg>
-);
 
 interface ManageChainAccountsModalProps {
   isOpen: boolean;
   onClose: () => void;
   chain: Chain | null;
   accounts: Account[];
-  onAddAccount: (chainId: string, accountId: string, limit?: number, percentage?: number) => void;
+  onAddAccount: (chainId: string, accountId: string, limit?: number) => void;
   onRemoveAccount: (chainId: string, accountId: string) => void;
   onReorder: (chainId: string, newOrder: string[]) => void;
   onUpdateLimit: (chainId: string, accountId: string, newLimit: number) => void;
-  onUpdatePercentage: (chainId: string, accountId: string, newPercentage: number) => void;
-  onToggleBuffer: (chainId: string) => void;
-  onToggleDistributionMode: (chainId: string) => void;
+  onSetOverflowAccount: (chainId: string, accountId: string | null) => void;
 }
 
 export function ManageChainAccountsModal({
@@ -79,39 +32,22 @@ export function ManageChainAccountsModal({
   onRemoveAccount,
   onReorder,
   onUpdateLimit,
-  onUpdatePercentage,
-  onToggleBuffer,
-  onToggleDistributionMode,
+  onSetOverflowAccount,
 }: ManageChainAccountsModalProps) {
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
   const [newLimit, setNewLimit] = useState<string>('');
-  const [newPercentage, setNewPercentage] = useState<string>('');
   const [editingLimitId, setEditingLimitId] = useState<string | null>(null);
   const [editLimitValue, setEditLimitValue] = useState<string>('');
-  const [editingPercentageId, setEditingPercentageId] = useState<string | null>(null);
-  const [editPercentageValue, setEditPercentageValue] = useState<string>('');
 
   // Reset state when modal closes
   useEffect(() => {
     if (!isOpen) {
       setSelectedAccountId('');
       setNewLimit('');
-      setNewPercentage('');
       setEditingLimitId(null);
       setEditLimitValue('');
-      setEditingPercentageId(null);
-      setEditPercentageValue('');
     }
   }, [isOpen]);
-
-  // Check if chain is in percentage mode
-  const isPercentageMode = chain?.distributionMode === 'percentage';
-
-  // Calculate total percentage
-  const totalPercentage = useMemo(() => {
-    if (!chain) return 0;
-    return chain.accounts.reduce((sum, acc) => sum + (acc.percentage || 0), 0);
-  }, [chain?.accounts]);
 
   // Memoize expensive computations
   const chainAccountIds = useMemo(() => 
@@ -120,29 +56,41 @@ export function ManageChainAccountsModal({
   );
 
   const availableAccounts = useMemo(() => 
+    accounts.filter(
+      (a) => !chainAccountIds.has(a.id) && a.id !== chain?.overflowAccountId
+    ),
+    [accounts, chainAccountIds, chain?.overflowAccountId]
+  );
+
+  const availableForOverflow = useMemo(() => 
     accounts.filter((a) => !chainAccountIds.has(a.id)),
     [accounts, chainAccountIds]
+  );
+
+  const overflowAccount = useMemo(() => 
+    chain?.overflowAccountId
+      ? accounts.find((a) => a.id === chain.overflowAccountId)
+      : null,
+    [accounts, chain?.overflowAccountId]
   );
 
   const chainAccountsWithData = useMemo(() => 
     (chain?.accounts ?? [])
       .map((ca) => {
         const account = accounts.find((a) => a.id === ca.accountId);
-        return account ? { ...account, limit: ca.limit, percentage: ca.percentage || 0 } : null;
+        return account ? { ...account, limit: ca.limit } : null;
       })
-      .filter(Boolean) as (Account & { limit: number; percentage: number })[],
+      .filter(Boolean) as (Account & { limit: number })[],
     [chain?.accounts, accounts]
   );
 
   const handleAddAccount = useCallback(() => {
     if (!selectedAccountId || !chain) return;
     const limit = newLimit ? parseFloat(newLimit) : undefined;
-    const percentage = newPercentage ? parseFloat(newPercentage) : undefined;
-    onAddAccount(chain.id, selectedAccountId, limit, percentage);
+    onAddAccount(chain.id, selectedAccountId, limit);
     setSelectedAccountId('');
     setNewLimit('');
-    setNewPercentage('');
-  }, [selectedAccountId, newLimit, newPercentage, chain, onAddAccount]);
+  }, [selectedAccountId, newLimit, chain, onAddAccount]);
 
   const handleMoveUp = useCallback((index: number) => {
     if (index === 0 || !chain) return;
@@ -150,7 +98,6 @@ export function ManageChainAccountsModal({
     [newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
     onReorder(chain.id, newOrder);
   }, [chain, onReorder]);
-
 
   const handleMoveDown = useCallback((index: number) => {
     if (!chain || index === chain.accounts.length - 1) return;
@@ -169,29 +116,6 @@ export function ManageChainAccountsModal({
     setEditLimitValue('');
   }, [chain, editLimitValue, onUpdateLimit]);
 
-  const handleSavePercentage = useCallback((accountId: string) => {
-    if (!chain) return;
-    const newPercentageNum = parseFloat(editPercentageValue);
-    if (!isNaN(newPercentageNum) && newPercentageNum >= 0 && newPercentageNum <= 100) {
-      onUpdatePercentage(chain.id, accountId, newPercentageNum);
-    }
-    setEditingPercentageId(null);
-    setEditPercentageValue('');
-  }, [chain, editPercentageValue, onUpdatePercentage]);
-
-  const handleToggleMode = useCallback(() => {
-    if (!chain) return;
-    onToggleDistributionMode(chain.id);
-  }, [chain, onToggleDistributionMode]);
-
-  const handleToggleBuffer = useCallback(() => {
-    if (!chain) return;
-    onToggleBuffer(chain.id);
-  }, [chain, onToggleBuffer]);
-
-  // Check if buffer can be disabled
-  const canDisableBuffer = chain?.bufferAmount === 0;
-
   if (!isOpen || !chain) return null;
 
   return (
@@ -202,89 +126,33 @@ export function ManageChainAccountsModal({
       size="lg"
     >
       <div className="space-y-6">
-        {/* Distribution Mode Toggle */}
-        <div className="p-4 bg-gradient-to-r from-french-blue/10 to-fresh-sky/10 dark:from-french-blue/20 dark:to-fresh-sky/20 rounded-lg border border-french-blue/30">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="font-medium text-jet-black dark:text-white flex items-center gap-2">
-                {isPercentageMode ? <ChartIcon /> : <ListIcon />} Distribution Mode
-              </h4>
-              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                {isPercentageMode
-                  ? 'Distribute deposits by percentage to each account'
-                  : 'Fill accounts sequentially until their limits are reached'}
-              </p>
-            </div>
-            <button
-              onClick={handleToggleMode}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                isPercentageMode
-                  ? 'bg-french-blue'
-                  : 'bg-slate-300 dark:bg-slate-600'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  isPercentageMode ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
-          <div className="mt-2 flex items-center gap-4 text-sm">
-            <span className={`${!isPercentageMode ? 'text-french-blue font-medium' : 'text-slate-500'}`}>
-              Sequential (Limits)
-            </span>
-            <span className={`${isPercentageMode ? 'text-french-blue font-medium' : 'text-slate-500'}`}>
-              Percentage
-            </span>
-          </div>
-          {isPercentageMode && (
-            <div className={`mt-3 text-sm font-medium ${totalPercentage === 100 ? 'text-emerald-600' : 'text-amber-600'}`}>
-              Total: {totalPercentage}% {totalPercentage !== 100 && '(must equal 100%)'}
-            </div>
-          )}
-        </div>
-
         {/* Add account section */}
         {availableAccounts.length > 0 && (
           <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg space-y-3">
             <h4 className="font-medium text-jet-black dark:text-white">
               Add Account to Chain
             </h4>
-            <div className="flex gap-2 flex-wrap">
-              <div className="flex-1 min-w-[150px]">
+            <div className="flex gap-2">
+              <div className="flex-1">
                 <Select
                   options={availableAccounts.map((a) => ({
                     value: a.id,
-                    label: `${a.icon === 'custom' && a.customEmoji ? a.customEmoji : ACCOUNT_ICONS[a.icon]} ${a.name}`,
+                    label: `${ACCOUNT_ICONS[a.icon]} ${a.name}`,
                   }))}
                   value={selectedAccountId}
                   onChange={(e) => setSelectedAccountId(e.target.value)}
                   placeholder="Select an account"
                 />
               </div>
-              {!isPercentageMode ? (
-                <div className="w-28">
-                  <Input
-                    type="number"
-                    value={newLimit}
-                    onChange={(e) => setNewLimit(e.target.value)}
-                    placeholder="Limit"
-                    min={0}
-                  />
-                </div>
-              ) : (
-                <div className="w-20">
-                  <Input
-                    type="number"
-                    value={newPercentage}
-                    onChange={(e) => setNewPercentage(e.target.value)}
-                    placeholder="%"
-                    min={0}
-                    max={100}
-                  />
-                </div>
-              )}
+              <div className="w-32">
+                <Input
+                  type="number"
+                  value={newLimit}
+                  onChange={(e) => setNewLimit(e.target.value)}
+                  placeholder="Limit"
+                  min={0}
+                />
+              </div>
               <Button onClick={handleAddAccount} disabled={!selectedAccountId}>
                 Add
               </Button>
@@ -306,7 +174,7 @@ export function ManageChainAccountsModal({
               {chainAccountsWithData.map((account, index) => (
                 <div
                   key={account.id}
-                  className="flex items-center gap-3 p-3 bg-surface border border-border rounded-lg"
+                  className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
                   style={{
                     borderLeftColor: ACCOUNT_COLORS[account.color],
                     borderLeftWidth: '4px',
@@ -357,7 +225,7 @@ export function ManageChainAccountsModal({
                   </div>
 
                   {/* Account info */}
-                  <span className="text-xl">{account.icon === 'custom' && account.customEmoji ? account.customEmoji : ACCOUNT_ICONS[account.icon]}</span>
+                  <span className="text-xl">{ACCOUNT_ICONS[account.icon]}</span>
                   <div className="flex-1">
                     <p className="font-medium text-jet-black dark:text-white">
                       {account.name}
@@ -367,82 +235,41 @@ export function ManageChainAccountsModal({
                     </p>
                   </div>
 
-                  {/* Limit or Percentage */}
+                  {/* Limit */}
                   <div className="text-right">
-                    {isPercentageMode ? (
-                      // Percentage mode editing
-                      editingPercentageId === account.id ? (
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
-                            value={editPercentageValue}
-                            onChange={(e) => setEditPercentageValue(e.target.value)}
-                            className="w-20 text-sm"
-                            min={0}
-                            max={100}
-                            autoFocus
-                          />
-                          <span className="text-sm text-slate-500">%</span>
-                          <button
-                            onClick={() => handleSavePercentage(account.id)}
-                            className="p-1 text-emerald-600 hover:bg-emerald-100 rounded"
-                          >
-                            <CheckIcon />
-                          </button>
-                          <button
-                            onClick={() => setEditingPercentageId(null)}
-                            className="p-1 text-slate-500 hover:bg-slate-100 rounded"
-                          >
-                            <CloseIcon />
-                          </button>
-                        </div>
-                      ) : (
+                    {editingLimitId === account.id ? (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          value={editLimitValue}
+                          onChange={(e) => setEditLimitValue(e.target.value)}
+                          className="w-24 text-sm"
+                          min={0}
+                          autoFocus
+                        />
                         <button
-                          onClick={() => {
-                            setEditingPercentageId(account.id);
-                            setEditPercentageValue(account.percentage.toString());
-                          }}
-                          className="text-sm text-slate-500 hover:text-french-blue flex items-center gap-1"
+                          onClick={() => handleSaveLimit(account.id)}
+                          className="p-1 text-emerald-600 hover:bg-emerald-100 rounded"
                         >
-                          {account.percentage}% <EditIcon />
+                          ✓
                         </button>
-                      )
+                        <button
+                          onClick={() => setEditingLimitId(null)}
+                          className="p-1 text-slate-500 hover:bg-slate-100 rounded"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     ) : (
-                      // Sequential mode (limit) editing
-                      editingLimitId === account.id ? (
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
-                            value={editLimitValue}
-                            onChange={(e) => setEditLimitValue(e.target.value)}
-                            className="w-24 text-sm"
-                            min={0}
-                            autoFocus
-                          />
-                          <button
-                            onClick={() => handleSaveLimit(account.id)}
-                            className="p-1 text-emerald-600 hover:bg-emerald-100 rounded"
-                          >
-                            <CheckIcon />
-                          </button>
-                          <button
-                            onClick={() => setEditingLimitId(null)}
-                            className="p-1 text-slate-500 hover:bg-slate-100 rounded"
-                          >
-                            <CloseIcon />
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => {
-                            setEditingLimitId(account.id);
-                            setEditLimitValue(account.limit.toString());
-                          }}
-                          className="text-sm text-slate-500 hover:text-french-blue flex items-center gap-1"
-                        >
-                          Limit: {formatCurrency(account.limit)} <EditIcon />
-                        </button>
-                      )
+                      <button
+                        onClick={() => {
+                          setEditingLimitId(account.id);
+                          setEditLimitValue(account.limit.toString());
+                        }}
+                        className="text-sm text-slate-500 hover:text-french-blue"
+                      >
+                        Limit: {formatCurrency(account.limit)} ✎
+                      </button>
                     )}
                   </div>
 
@@ -472,61 +299,57 @@ export function ManageChainAccountsModal({
           )}
         </div>
 
-        {/* Buffer Account Section - Only show in sequential mode */}
-        {!isPercentageMode && (
+        {/* Overflow Account Section */}
         <div className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-lg border-2 border-dashed border-emerald-300 dark:border-emerald-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="font-medium text-jet-black dark:text-white flex items-center gap-2">
-                <span className="text-emerald-600"><InfinityIcon /></span>
-                Buffer Account
-              </h4>
-              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                Stores overflow funds when all accounts reach their limits
-              </p>
-            </div>
-            <button
-              onClick={handleToggleBuffer}
-              disabled={chain.hasBufferAccount && !canDisableBuffer}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                chain.hasBufferAccount
-                  ? 'bg-emerald-500'
-                  : 'bg-slate-300 dark:bg-slate-600'
-              } ${chain.hasBufferAccount && !canDisableBuffer ? 'opacity-60 cursor-not-allowed' : ''}`}
-              title={chain.hasBufferAccount && !canDisableBuffer ? 'Cannot disable while buffer has funds' : ''}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  chain.hasBufferAccount ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
+          <h4 className="font-medium text-jet-black dark:text-white mb-3 flex items-center gap-2">
+            <span className="text-lg">∞</span>
+            Overflow Account (No Limit)
+          </h4>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+            Any remaining funds after all accounts reach their limits will go here.
+          </p>
           
-          {chain.hasBufferAccount && (
-            <div className="mt-3 p-3 bg-surface rounded-lg border border-emerald-200 dark:border-emerald-700">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-emerald-600"><BankIcon /></span>
-                  <span className="font-medium text-foreground">Chain Buffer</span>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">
-                    {formatCurrency(chain.bufferAmount)}
+          {overflowAccount ? (
+            <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg border border-emerald-200 dark:border-emerald-700">
+              <div className="flex items-center gap-3">
+                <span className="text-xl">{ACCOUNT_ICONS[overflowAccount.icon]}</span>
+                <div>
+                  <p className="font-medium text-jet-black dark:text-white">
+                    {overflowAccount.name}
                   </p>
-                  {chain.bufferAmount > 0 && (
-                    <p className="text-xs text-amber-600 dark:text-amber-400">
-                      Cannot disable until emptied
-                    </p>
-                  )}
+                  <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                    Balance: {formatCurrency(overflowAccount.amount)}
+                  </p>
                 </div>
               </div>
+              <button
+                onClick={() => onSetOverflowAccount(chain.id, null)}
+                className="px-3 py-1.5 text-sm text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-900/30 rounded-lg transition-colors"
+              >
+                Remove
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <Select
+                options={availableForOverflow.map((a) => ({
+                  value: a.id,
+                  label: `${ACCOUNT_ICONS[a.icon]} ${a.name}`,
+                }))}
+                value=""
+                onChange={(e) => {
+                  if (e.target.value) {
+                    onSetOverflowAccount(chain.id, e.target.value);
+                  }
+                }}
+                placeholder="Select overflow account"
+                className="flex-1"
+              />
             </div>
           )}
         </div>
-        )}
 
-        <div className="flex justify-end pt-4 sticky bottom-0 bg-surface pb-1">
+        <div className="flex justify-end pt-4">
           <Button onClick={onClose}>Done</Button>
         </div>
       </div>

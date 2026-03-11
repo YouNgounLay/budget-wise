@@ -2,103 +2,106 @@
 
 /**
  * Icon Picker Component
- * Allows users to select an icon for their account
- * Shows curated popular icons with option to input custom emoji
+ * Searchable icon picker for account icons using Lucide icons
+ * Features:
+ * - Search bar to filter icons by name
+ * - Grid display of all available icons
+ * - Categorized icon browsing
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { AccountIcon, ACCOUNT_ICONS } from '@/app/types/account';
+import { getLucideIcon } from '@/app/utils/lucideIconMap';
+import { Search, ChevronDown } from 'lucide-react';
 
 interface IconPickerProps {
-  value: AccountIcon | string;
-  onChange: (icon: AccountIcon, customEmoji?: string) => void;
-  customEmoji?: string;
+  value: AccountIcon;
+  onChange: (icon: AccountIcon) => void;
   label?: string;
 }
 
-// Curated list of popular icons (no duplicates)
-const POPULAR_ICONS: AccountIcon[] = [
-  'money',
-  'bank',
-  'wallet',
-  'credit-card',
-  'piggy-bank',
-  'savings',
-  'investment',
-  'car',
-  'home',
-  'grocery',
-  'food',
-  'coffee',
-  'shopping',
-  'entertainment',
-  'travel',
-  'health',
-  'fitness',
-  'education',
-  'business',
-  'technology',
-  'gifts',
-  'heart',
-  'star',
-  'target',
-];
+// Icon categories for organized browsing
+const ICON_CATEGORIES: Record<string, AccountIcon[]> = {
+  'Money & Finance': [
+    'money', 'bank', 'wallet', 'credit-card', 'piggy-bank', 'savings',
+    'investment', 'chart', 'debt', 'receipt', 'calculator', 'gift-card', 'coupon'
+  ],
+  'Home & Utilities': [
+    'home', 'rent', 'electricity', 'water', 'gas', 'internet', 'key', 'lock'
+  ],
+  'Transportation': [
+    'car', 'bicycle', 'bus', 'train', 'plane', 'boat', 'truck'
+  ],
+  'Food & Drink': [
+    'grocery', 'food', 'coffee', 'restaurant'
+  ],
+  'Shopping': [
+    'shopping', 'clothing', 'gifts', 'box', 'package'
+  ],
+  'Health & Wellness': [
+    'health', 'fitness', 'medicine', 'dental', 'glasses', 'spa', 'insurance'
+  ],
+  'Entertainment': [
+    'entertainment', 'gaming', 'music', 'streaming', 'party', 'sports'
+  ],
+  'Education & Work': [
+    'education', 'business', 'briefcase', 'graduation', 'books', 'school', 'library', 'folder'
+  ],
+  'Technology': [
+    'technology', 'phone', 'computer', 'camera'
+  ],
+  'Travel & Vacation': [
+    'travel', 'vacation', 'umbrella'
+  ],
+  'Life Events': [
+    'baby', 'wedding', 'ring', 'haircut', 'pet'
+  ],
+  'Buildings': [
+    'building', 'factory', 'hospital', 'church'
+  ],
+  'Symbols': [
+    'star', 'heart', 'diamond', 'crown', 'trophy', 'target', 'rocket',
+    'fire', 'snowflake', 'sun', 'moon', 'rainbow'
+  ],
+  'Other': [
+    'art', 'tools', 'emergency', 'charity', 'taxes', 'calendar', 'clock', 'alarm'
+  ],
+};
 
-// Regex to match a single emoji (supports most common emojis including skin tones and flags)
-const EMOJI_REGEX = /^(?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F)(?:\p{Emoji_Modifier})?(?:\u200D(?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F)(?:\p{Emoji_Modifier})?)*$/u;
+// Get all icons as a flat array
+const ALL_ICONS = Object.keys(ACCOUNT_ICONS).filter(
+  (key) => key !== 'custom'
+) as AccountIcon[];
 
-// Simple check for single emoji using segmenter (more reliable)
-function isValidSingleEmoji(str: string): boolean {
-  if (!str || str.length === 0) return false;
-  
-  // Use Intl.Segmenter if available for accurate grapheme counting
-  if (typeof Intl !== 'undefined' && 'Segmenter' in Intl) {
-    const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
-    const segments = [...segmenter.segment(str)];
-    if (segments.length !== 1) return false;
-  }
-  
-  // Check if it matches emoji pattern
-  return EMOJI_REGEX.test(str);
-}
+export function IconPicker({ value, onChange, label }: IconPickerProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
-export function IconPicker({ value, onChange, customEmoji, label }: IconPickerProps) {
-  const [showCustomInput, setShowCustomInput] = useState(false);
-  const [customEmojiInput, setCustomEmojiInput] = useState(customEmoji || '');
-  const [inputError, setInputError] = useState('');
-
-  // Get the display emoji - either from ACCOUNT_ICONS or custom
-  const getDisplayEmoji = (iconKey: AccountIcon | string): string => {
-    if (iconKey === 'custom' && customEmoji) {
-      return customEmoji;
+  // Filter icons based on search query
+  const filteredIcons = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return null; // Return null to show categories view
     }
-    return ACCOUNT_ICONS[iconKey as AccountIcon] || '📦';
+    const query = searchQuery.toLowerCase().trim();
+    return ALL_ICONS.filter((iconKey) => 
+      iconKey.toLowerCase().includes(query) ||
+      iconKey.replace('-', ' ').toLowerCase().includes(query)
+    );
+  }, [searchQuery]);
+
+  // Render a Lucide icon
+  const renderIcon = (iconKey: AccountIcon) => {
+    const IconComponent = getLucideIcon(iconKey);
+    return <IconComponent className="w-5 h-5" strokeWidth={1.5} />;
   };
 
-  const handleCustomEmojiSubmit = () => {
-    const trimmed = customEmojiInput.trim();
-    
-    if (!trimmed) {
-      setInputError('Please enter an emoji');
-      return;
-    }
-    
-    if (!isValidSingleEmoji(trimmed)) {
-      setInputError('Please enter a single emoji only');
-      return;
-    }
-    
-    setInputError('');
-    onChange('custom' as AccountIcon, trimmed);
-    setShowCustomInput(false);
+  const handleIconSelect = (iconKey: AccountIcon) => {
+    onChange(iconKey);
+    setSearchQuery('');
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleCustomEmojiSubmit();
-    }
-  };
+  // Get the selected icon component
+  const SelectedIconComponent = getLucideIcon(value);
 
   return (
     <div className="icon-picker">
@@ -108,99 +111,120 @@ export function IconPicker({ value, onChange, customEmoji, label }: IconPickerPr
         </label>
       )}
       
-      {/* Popular Icons Grid */}
-      <div className="rounded-lg border border-border p-3 bg-surface">
-        <div className="grid grid-cols-8 gap-2 mb-3">
-          {POPULAR_ICONS.map((iconKey) => (
-            <button
-              key={iconKey}
-              type="button"
-              onClick={() => onChange(iconKey)}
-              className={`
-                p-2 rounded-lg text-xl transition-all duration-200
-                hover:scale-110 hover:bg-slate-100 dark:hover:bg-slate-700
-                ${
-                  value === iconKey && !customEmoji
-                    ? 'bg-french-blue/20 ring-2 ring-french-blue'
-                    : 'bg-background'
-                }
-              `}
-              title={iconKey}
-              aria-label={`Select ${iconKey} icon`}
-            >
-              {ACCOUNT_ICONS[iconKey]}
-            </button>
-          ))}
+      {/* Search bar */}
+      <div className="mb-3">
+        <div className="relative">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search icons..."
+            className="w-full px-4 py-2 pl-10 rounded-lg border border-border bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-french-blue"
+          />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
         </div>
+      </div>
 
-        {/* Custom Emoji Section */}
-        <div className="border-t border-border pt-3">
-          {showCustomInput ? (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={customEmojiInput}
-                  onChange={(e) => {
-                    setCustomEmojiInput(e.target.value);
-                    setInputError(''); // Clear error when typing
-                  }}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Paste an emoji here..."
-                  className={`flex-1 px-3 py-2 text-lg rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-french-blue ${
-                    inputError ? 'border-rose-500' : 'border-border'
-                  }`}
-                  autoFocus
-                  maxLength={10}
-                />
-                <button
-                  type="button"
-                  onClick={handleCustomEmojiSubmit}
-                  className="px-3 py-2 bg-french-blue text-white rounded-lg hover:bg-yale-blue transition-colors"
-                >
-                  Add
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCustomInput(false);
-                    setCustomEmojiInput(customEmoji || '');
-                    setInputError('');
-                  }}
-                  className="px-3 py-2 text-muted hover:text-foreground transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-              {inputError && (
-                <p className="text-sm text-rose-500">{inputError}</p>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => setShowCustomInput(true)}
-                className="flex items-center gap-2 px-3 py-2 text-sm text-french-blue hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Custom Emoji
-              </button>
-              
-              {/* Show currently selected custom emoji if any */}
-              {value === 'custom' && customEmoji && (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted">Selected:</span>
-                  <span className="text-2xl p-1 bg-french-blue/20 ring-2 ring-french-blue rounded-lg">
-                    {customEmoji}
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
+      {/* Currently selected icon */}
+      <div className="mb-3 flex items-center gap-3 p-3 bg-french-blue/10 rounded-lg">
+        <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-french-blue/20 text-french-blue">
+          <SelectedIconComponent className="w-5 h-5" strokeWidth={2} />
         </div>
+        <span className="text-sm font-medium text-french-blue">
+          {value.replace('-', ' ')}
+        </span>
+        <span className="text-xs text-muted ml-auto">Selected</span>
+      </div>
+
+      {/* Icon grid */}
+      <div className="rounded-lg border border-border bg-surface max-h-64 overflow-y-auto">
+        {filteredIcons !== null ? (
+          // Search results view
+          <div className="p-3">
+            {filteredIcons.length === 0 ? (
+              <p className="text-center text-muted py-4">
+                No icons found for &quot;{searchQuery}&quot;
+              </p>
+            ) : (
+              <div className="grid grid-cols-6 gap-2">
+                {filteredIcons.map((iconKey) => (
+                  <button
+                    key={iconKey}
+                    type="button"
+                    onClick={() => handleIconSelect(iconKey)}
+                    className={`
+                      p-2 rounded-lg transition-all duration-200 flex items-center justify-center
+                      hover:scale-110 hover:bg-slate-100 dark:hover:bg-slate-700
+                      ${
+                        value === iconKey
+                          ? 'bg-french-blue/20 ring-2 ring-french-blue text-french-blue'
+                          : 'bg-background text-foreground'
+                      }
+                    `}
+                    title={iconKey.replace('-', ' ')}
+                    aria-label={`Select ${iconKey} icon`}
+                  >
+                    {renderIcon(iconKey)}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          // Categories view
+          <div className="divide-y divide-border">
+            {Object.entries(ICON_CATEGORIES).map(([category, icons]) => (
+              <div key={category}>
+                <button
+                  type="button"
+                  onClick={() => setExpandedCategory(
+                    expandedCategory === category ? null : category
+                  )}
+                  className="w-full flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <span className="text-sm font-medium text-foreground">
+                    {category}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted">{icons.length} icons</span>
+                    <ChevronDown
+                      className={`w-4 h-4 text-muted transition-transform ${
+                        expandedCategory === category ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </div>
+                </button>
+                
+                {expandedCategory === category && (
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800/50">
+                    <div className="grid grid-cols-6 gap-2">
+                      {icons.map((iconKey) => (
+                        <button
+                          key={iconKey}
+                          type="button"
+                          onClick={() => handleIconSelect(iconKey)}
+                          className={`
+                            p-2 rounded-lg transition-all duration-200 flex items-center justify-center
+                            hover:scale-110 hover:bg-white dark:hover:bg-slate-700
+                            ${
+                              value === iconKey
+                                ? 'bg-french-blue/20 ring-2 ring-french-blue text-french-blue'
+                                : 'bg-background text-foreground'
+                            }
+                          `}
+                          title={iconKey.replace('-', ' ')}
+                          aria-label={`Select ${iconKey} icon`}
+                        >
+                          {renderIcon(iconKey)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

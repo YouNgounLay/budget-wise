@@ -38,11 +38,18 @@ export const RULE_FREQUENCY_OPTIONS: { value: RuleFrequency; label: string }[] =
 ];
 
 /**
- * Target account for fund allocation with percentage
+ * Allocation mode - percentage or fixed amount
+ */
+export type AllocationMode = 'percentage' | 'amount';
+
+/**
+ * Target account for fund allocation with percentage or fixed amount
  */
 export interface AllocationTarget {
   accountId: string;
-  percentage: number; // 0-100, sum of all targets must equal 100
+  percentage: number; // 0-100, used when mode is 'percentage'
+  amount?: number; // Fixed amount, used when mode is 'amount'
+  mode: AllocationMode; // 'percentage' or 'amount'
 }
 
 /**

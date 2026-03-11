@@ -21,8 +21,22 @@ import {
   PRESET_THEMES,
   DEFAULT_LIGHT_COLORS,
   DEFAULT_DARK_COLORS,
+  FontConfig,
+  FontSettings,
+  DEFAULT_FONTS,
+  DEFAULT_FONT_SETTINGS,
 } from '@/app/types/theme';
 import { generateId, getCurrentTimestamp } from '@/app/utils/helpers';
+import {
+  loadFontSettings,
+  saveFontSettings,
+  loadCustomFonts,
+  saveCustomFonts,
+  getFontById,
+  applyFont,
+  addCustomFont as addCustomFontService,
+  removeCustomFont as removeCustomFontService,
+} from '@/app/services/fontService';
 
 const PROFILES_STORAGE_KEY = 'budgetwise-theme-profiles';
 const ACTIVE_PROFILE_KEY = 'budgetwise-active-profile';
@@ -36,6 +50,13 @@ interface ThemeCustomizationContextValue {
   setActiveProfile: (id: string) => void;
   applyThemeColors: (colors: ThemeColors) => void;
   resetToDefault: () => void;
+  // Font settings
+  fontSettings: FontSettings;
+  allFonts: FontConfig[];
+  activeFont: FontConfig | null;
+  setActiveFont: (fontId: string) => void;
+  addCustomFont: (googleFontsUrl: string) => FontConfig | null;
+  removeCustomFont: (fontId: string) => boolean;
 }
 
 const ThemeCustomizationContext = createContext<ThemeCustomizationContextValue | undefined>(undefined);
@@ -93,14 +114,22 @@ export function ThemeCustomizationProvider({ children }: ThemeCustomizationProvi
   const [profiles, setProfiles] = useState<ThemeProfile[]>([createDefaultProfile()]);
   const [activeProfileId, setActiveProfileId] = useState<string>('default');
   const [mounted, setMounted] = useState(false);
+  
+  // Font state
+  const [fontSettings, setFontSettings] = useState<FontSettings>(DEFAULT_FONT_SETTINGS);
+  const [customFonts, setCustomFonts] = useState<FontConfig[]>([]);
 
   // Initialize from storage
   useEffect(() => {
     const loadedProfiles = loadProfiles();
     const loadedActiveId = loadActiveProfileId();
+    const loadedFontSettings = loadFontSettings();
+    const loadedCustomFonts = loadCustomFonts();
     
     setProfiles(loadedProfiles);
     setActiveProfileId(loadedActiveId);
+    setFontSettings(loadedFontSettings);
+    setCustomFonts(loadedCustomFonts);
     setMounted(true);
   }, []);
 
@@ -119,6 +148,51 @@ export function ThemeCustomizationProvider({ children }: ThemeCustomizationProvi
   const activeProfile = useMemo(() => {
     return profiles.find(p => p.id === activeProfileId) || profiles[0];
   }, [profiles, activeProfileId]);
+
+  // All available fonts (default + custom)
+  const allFonts = useMemo(() => {
+    return [...DEFAULT_FONTS, ...customFonts];
+  }, [customFonts]);
+
+  // Active font
+  const activeFont = useMemo(() => {
+    return allFonts.find(f => f.id === fontSettings.activeFontId) || DEFAULT_FONTS[0];
+  }, [allFonts, fontSettings.activeFontId]);
+
+  // Apply font when active font changes
+  useEffect(() => {
+    if (!mounted || !activeFont) return;
+    applyFont(activeFont);
+  }, [mounted, activeFont]);
+
+  // Font callbacks
+  const setActiveFontFn = useCallback((fontId: string) => {
+    const newSettings = { ...fontSettings, activeFontId: fontId };
+    setFontSettings(newSettings);
+    saveFontSettings(newSettings);
+  }, [fontSettings]);
+
+  const addCustomFontFn = useCallback((googleFontsUrl: string): FontConfig | null => {
+    const newFont = addCustomFontService(googleFontsUrl);
+    if (newFont) {
+      setCustomFonts(loadCustomFonts());
+    }
+    return newFont;
+  }, []);
+
+  const removeCustomFontFn = useCallback((fontId: string): boolean => {
+    const removed = removeCustomFontService(fontId);
+    if (removed) {
+      setCustomFonts(loadCustomFonts());
+      // If active font was removed, switch to default
+      if (fontSettings.activeFontId === fontId) {
+        const newSettings = { ...fontSettings, activeFontId: DEFAULT_FONTS[0].id };
+        setFontSettings(newSettings);
+        saveFontSettings(newSettings);
+      }
+    }
+    return removed;
+  }, [fontSettings]);
 
   /**
    * Derives surface color (for cards, modals, etc.) from background color
@@ -260,7 +334,14 @@ export function ThemeCustomizationProvider({ children }: ThemeCustomizationProvi
     setActiveProfile: setActiveProfileFn,
     applyThemeColors,
     resetToDefault,
-  }), [profiles, activeProfile, createProfile, updateProfile, deleteProfile, setActiveProfileFn, applyThemeColors, resetToDefault]);
+    // Font settings
+    fontSettings,
+    allFonts,
+    activeFont,
+    setActiveFont: setActiveFontFn,
+    addCustomFont: addCustomFontFn,
+    removeCustomFont: removeCustomFontFn,
+  }), [profiles, activeProfile, createProfile, updateProfile, deleteProfile, setActiveProfileFn, applyThemeColors, resetToDefault, fontSettings, allFonts, activeFont, setActiveFontFn, addCustomFontFn, removeCustomFontFn]);
 
   return (
     <ThemeCustomizationContext.Provider value={value}>

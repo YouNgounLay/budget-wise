@@ -9,6 +9,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useThemeCustomization } from '@/app/context/ThemeCustomizationContext';
 import { useTheme } from '@/app/context/ThemeContext';
 import { ThemeCustomizer } from './ThemeCustomizer';
+import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 import { ThemeProfile } from '@/app/types/theme';
 
 // Icon Components
@@ -35,6 +36,7 @@ export function ThemeSelector() {
   const [isOpen, setIsOpen] = useState(false);
   const [showCustomizer, setShowCustomizer] = useState(false);
   const [editingProfile, setEditingProfile] = useState<ThemeProfile | undefined>();
+  const [deleteThemeTarget, setDeleteThemeTarget] = useState<ThemeProfile | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -58,8 +60,13 @@ export function ThemeSelector() {
   const handleDeleteProfile = (profile: ThemeProfile, e: React.MouseEvent) => {
     e.stopPropagation();
     if (profile.id === 'default') return;
-    if (confirm(`Delete "${profile.name}" theme?`)) {
-      deleteProfile(profile.id);
+    setDeleteThemeTarget(profile);
+  };
+
+  const confirmDeleteTheme = () => {
+    if (deleteThemeTarget) {
+      deleteProfile(deleteThemeTarget.id);
+      setDeleteThemeTarget(null);
     }
   };
 
@@ -238,6 +245,15 @@ export function ThemeSelector() {
           setEditingProfile(undefined);
         }}
         editingProfile={editingProfile}
+      />
+
+      <DeleteConfirmationModal
+        isOpen={!!deleteThemeTarget}
+        onClose={() => setDeleteThemeTarget(null)}
+        onConfirm={confirmDeleteTheme}
+        title="Delete Theme"
+        message="Are you sure you want to delete this theme?"
+        itemName={deleteThemeTarget?.name}
       />
     </>
   );

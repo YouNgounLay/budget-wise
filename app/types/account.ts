@@ -1,0 +1,275 @@
+/**
+ * Account Types
+ * Defines the structure for budget accounts
+ */
+
+export type AccountIcon =
+  | 'money'
+  | 'car'
+  | 'grocery'
+  | 'home'
+  | 'health'
+  | 'education'
+  | 'entertainment'
+  | 'travel'
+  | 'clothing'
+  | 'business'
+  | 'food'
+  | 'technology'
+  | 'fitness'
+  | 'gifts'
+  | 'savings'
+  | 'bank'
+  | 'wallet'
+  | 'credit-card'
+  | 'piggy-bank'
+  | 'chart'
+  | 'shopping'
+  | 'coffee'
+  | 'pet'
+  | 'baby'
+  | 'wedding'
+  | 'vacation'
+  | 'sports'
+  | 'music'
+  | 'books'
+  | 'art'
+  | 'tools'
+  | 'phone'
+  | 'computer'
+  | 'camera'
+  | 'gaming'
+  | 'streaming'
+  | 'electricity'
+  | 'water'
+  | 'gas'
+  | 'internet'
+  | 'insurance'
+  | 'taxes'
+  | 'rent'
+  | 'debt'
+  | 'investment'
+  | 'emergency'
+  | 'party'
+  | 'restaurant'
+  | 'haircut'
+  | 'spa'
+  | 'medicine'
+  | 'dental'
+  | 'glasses'
+  | 'bicycle'
+  | 'bus'
+  | 'train'
+  | 'plane'
+  | 'boat'
+  | 'charity'
+  | 'church'
+  | 'star'
+  | 'heart'
+  | 'diamond'
+  | 'crown'
+  | 'trophy'
+  | 'target'
+  | 'rocket'
+  | 'fire'
+  | 'snowflake'
+  | 'sun'
+  | 'moon'
+  | 'rainbow'
+  | 'umbrella'
+  | 'briefcase'
+  | 'graduation'
+  | 'ring'
+  | 'key'
+  | 'lock'
+  | 'calendar'
+  | 'clock'
+  | 'alarm'
+  | 'gift-card'
+  | 'coupon'
+  | 'receipt'
+  | 'calculator'
+  | 'folder'
+  | 'box'
+  | 'package'
+  | 'truck'
+  | 'building'
+  | 'factory'
+  | 'hospital'
+  | 'school'
+  | 'library'
+  | 'custom';
+
+export type AccountColor =
+  | 'jet-black'
+  | 'yale-blue'
+  | 'french-blue'
+  | 'fresh-sky'
+  | 'strong-cyan'
+  | 'emerald'
+  | 'amber'
+  | 'rose'
+  | 'violet'
+  | 'slate'
+  | 'custom';
+
+/**
+ * Item associated with an account
+ * Represents a cost item within an account (e.g., Gym Membership, Entry Pass)
+ */
+export interface AccountItem {
+  id: string;
+  name: string;
+  cost: number;
+}
+
+export interface Account {
+  id: string;
+  name: string;
+  description: string;
+  amount: number;
+  icon: AccountIcon;
+  customEmoji?: string;
+  color: AccountColor;
+  customColor?: string;
+  tagIds: string[]; // Array of tag IDs associated with this account
+  items?: AccountItem[]; // List of items/costs associated with this account
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateAccountDTO {
+  name: string;
+  description: string;
+  amount: number;
+  icon: AccountIcon;
+  customEmoji?: string;
+  color: AccountColor;
+  customColor?: string;
+  tagIds?: string[];
+  items?: AccountItem[];
+}
+
+export interface UpdateAccountDTO {
+  name?: string;
+  description?: string;
+  amount?: number;
+  icon?: AccountIcon;
+  customEmoji?: string;
+  color?: AccountColor;
+  customColor?: string;
+  tagIds?: string[];
+  items?: AccountItem[];
+}
+
+export const ACCOUNT_ICONS: Record<AccountIcon, string> = {
+  money: '💰',
+  car: '🚗',
+  grocery: '🛒',
+  home: '🏠',
+  health: '💊',
+  education: '🎓',
+  entertainment: '🎮',
+  travel: '✈️',
+  clothing: '👔',
+  business: '💼',
+  food: '🍽️',
+  technology: '📱',
+  fitness: '💪',
+  gifts: '🎁',
+  savings: '📦',
+  bank: '🏦',
+  wallet: '👛',
+  'credit-card': '💳',
+  'piggy-bank': '🐷',
+  chart: '📈',
+  shopping: '🛍️',
+  coffee: '☕',
+  pet: '🐾',
+  baby: '👶',
+  wedding: '💒',
+  vacation: '🏖️',
+  sports: '⚽',
+  music: '🎵',
+  books: '📚',
+  art: '🎨',
+  tools: '🔧',
+  phone: '📞',
+  computer: '💻',
+  camera: '📷',
+  gaming: '🎲',
+  streaming: '📺',
+  electricity: '⚡',
+  water: '💧',
+  gas: '🔥',
+  internet: '🌐',
+  insurance: '🛡️',
+  taxes: '🏛️',
+  rent: '🔑',
+  debt: '📉',
+  investment: '📊',
+  emergency: '🚨',
+  party: '🎉',
+  restaurant: '🍴',
+  haircut: '💇',
+  spa: '🧖',
+  medicine: '💉',
+  dental: '🦷',
+  glasses: '👓',
+  bicycle: '🚲',
+  bus: '🚌',
+  train: '🚆',
+  plane: '🛫',
+  boat: '⛵',
+  charity: '🤝',
+  church: '⛪',
+  star: '⭐',
+  heart: '❤️',
+  diamond: '💎',
+  crown: '👑',
+  trophy: '🏆',
+  target: '🎯',
+  rocket: '🚀',
+  fire: '🔥',
+  snowflake: '❄️',
+  sun: '☀️',
+  moon: '🌙',
+  rainbow: '🌈',
+  umbrella: '☂️',
+  briefcase: '💼',
+  graduation: '🎓',
+  ring: '💍',
+  key: '🗝️',
+  lock: '🔒',
+  calendar: '📅',
+  clock: '⏰',
+  alarm: '⏰',
+  'gift-card': '🎫',
+  coupon: '🎟️',
+  receipt: '🧾',
+  calculator: '🧮',
+  folder: '📁',
+  box: '📦',
+  package: '📬',
+  truck: '🚚',
+  building: '🏢',
+  factory: '🏭',
+  hospital: '🏥',
+  school: '🏫',
+  library: '📖',
+  custom: '✨',
+};
+
+export const ACCOUNT_COLORS: Record<AccountColor, string> = {
+  'jet-black': '#122C34',
+  'yale-blue': '#224870',
+  'french-blue': '#2A4494',
+  'fresh-sky': '#4EA5D9',
+  'strong-cyan': '#44CFCB',
+  'emerald': '#10B981',
+  'amber': '#F59E0B',
+  'rose': '#F43F5E',
+  'violet': '#8B5CF6',
+  'slate': '#64748B',
+  'custom': '#000000',
+};

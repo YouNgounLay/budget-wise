@@ -1,266 +1,65 @@
-'use client';
+import Image from "next/image";
 
-/**
- * Dashboard Page
- * Main landing page showing overview of accounts and chains
- */
-
-import React, { useState } from 'react';
-import { MainLayout } from './components/layout';
-import { Button, Card } from './components/shared';
-import {
-  AccountList,
-  AccountForm,
-  TransactionModal,
-} from './components/account';
-import {
-  ChainList,
-  ChainForm,
-  ChainDepositModal,
-  ManageChainAccountsModal,
-} from './components/chain';
-import { useAccounts } from './context/AccountContext';
-import { useChains } from './context/ChainContext';
-import { Account, CreateAccountDTO } from './types/account';
-import { Chain, CreateChainDTO, DepositResult } from './types/chain';
-import { applyDeposits } from './services/depositService';
-import { formatCurrency } from './utils/helpers';
-
-export default function Dashboard() {
-  const { state: accountState, createAccount, updateAccount, deleteAccount, depositToAccount, withdrawFromAccount, updateAccountsFromDeposit } = useAccounts();
-  const { state: chainState, createChain, updateChain, deleteChain, addAccountToChain, removeAccountFromChain, reorderChainAccounts, updateAccountLimitInChain, setOverflowAccount } = useChains();
-
-  // Account modals
-  const [isAccountFormOpen, setIsAccountFormOpen] = useState(false);
-  const [editingAccount, setEditingAccount] = useState<Account | undefined>();
-  const [transactionAccount, setTransactionAccount] = useState<Account | null>(null);
-  const [transactionType, setTransactionType] = useState<'deposit' | 'withdraw'>('deposit');
-
-  // Chain modals
-  const [isChainFormOpen, setIsChainFormOpen] = useState(false);
-  const [editingChain, setEditingChain] = useState<Chain | undefined>();
-  const [depositChainId, setDepositChainId] = useState<string | null>(null);
-  const [managingChainId, setManagingChainId] = useState<string | null>(null);
-
-  // Get live chain data from state
-  const depositChain = depositChainId ? chainState.chains.find(c => c.id === depositChainId) || null : null;
-  const managingChain = managingChainId ? chainState.chains.find(c => c.id === managingChainId) || null : null;
-
-  // Calculate totals
-  const totalBalance = accountState.accounts.reduce((sum, acc) => sum + acc.amount, 0);
-  const totalAccounts = accountState.accounts.length;
-  const totalChains = chainState.chains.length;
-
-  // Account handlers
-  const handleCreateAccount = (data: CreateAccountDTO) => {
-    createAccount(data);
-    setIsAccountFormOpen(false);
-  };
-
-  const handleEditAccount = (account: Account) => {
-    setEditingAccount(account);
-    setIsAccountFormOpen(true);
-  };
-
-  const handleUpdateAccount = (data: CreateAccountDTO) => {
-    if (editingAccount) {
-      updateAccount(editingAccount.id, data);
-    }
-    setEditingAccount(undefined);
-    setIsAccountFormOpen(false);
-  };
-
-  const handleDeleteAccount = (account: Account) => {
-    if (confirm(`Are you sure you want to delete "${account.name}"?`)) {
-      deleteAccount(account.id);
-    }
-  };
-
-  const handleDeposit = (account: Account) => {
-    setTransactionAccount(account);
-    setTransactionType('deposit');
-  };
-
-  const handleWithdraw = (account: Account) => {
-    setTransactionAccount(account);
-    setTransactionType('withdraw');
-  };
-
-  const handleTransaction = (accountId: string, amount: number) => {
-    if (transactionType === 'deposit') {
-      depositToAccount(accountId, amount);
-    } else {
-      withdrawFromAccount(accountId, amount);
-    }
-  };
-
-  // Chain handlers
-  const handleCreateChain = (data: CreateChainDTO) => {
-    createChain(data);
-    setIsChainFormOpen(false);
-  };
-
-  const handleEditChain = (chain: Chain) => {
-    setEditingChain(chain);
-    setIsChainFormOpen(true);
-  };
-
-  const handleUpdateChain = (data: CreateChainDTO) => {
-    if (editingChain) {
-      updateChain(editingChain.id, data);
-    }
-    setEditingChain(undefined);
-    setIsChainFormOpen(false);
-  };
-
-  const handleDeleteChain = (chain: Chain) => {
-    if (confirm(`Are you sure you want to delete "${chain.name}"?`)) {
-      deleteChain(chain.id);
-    }
-  };
-
-  const handleChainDeposit = (result: DepositResult) => {
-    const updatedAccounts = applyDeposits(result.deposits, accountState.accounts);
-    updateAccountsFromDeposit(updatedAccounts);
-  };
-
-  if (accountState.isLoading || chainState.isLoading) {
-    return (
-      <MainLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-slate-500">Loading...</div>
-        </div>
-      </MainLayout>
-    );
-  }
-
+export default function Home() {
   return (
-    <MainLayout>
-      <div className="space-y-8">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-jet-black dark:text-white">
-              Dashboard
-            </h1>
-            <p className="text-slate-500 dark:text-slate-400">
-              Overview of your budget accounts and chains
-            </p>
-          </div>
+    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
+      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
+        <Image
+          className="dark:invert"
+          src="/next.svg"
+          alt="Next.js logo"
+          width={100}
+          height={20}
+          priority
+        />
+        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
+          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
+            To get started, edit the page.tsx file.
+          </h1>
+          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
+            Looking for a starting point or more instructions? Head over to{" "}
+            <a
+              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+              className="font-medium text-zinc-950 dark:text-zinc-50"
+            >
+              Templates
+            </a>{" "}
+            or the{" "}
+            <a
+              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+              className="font-medium text-zinc-950 dark:text-zinc-50"
+            >
+              Learning
+            </a>{" "}
+            center.
+          </p>
         </div>
-
-        {/* Stats cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="bg-gradient-to-br from-french-blue to-yale-blue text-white">
-            <div className="text-sm opacity-80">Total Balance</div>
-            <div className="text-3xl font-bold">{formatCurrency(totalBalance)}</div>
-          </Card>
-          <Card>
-            <div className="text-sm text-slate-500">Total Accounts</div>
-            <div className="text-3xl font-bold text-jet-black dark:text-white">
-              {totalAccounts}
-            </div>
-          </Card>
-          <Card>
-            <div className="text-sm text-slate-500">Active Chains</div>
-            <div className="text-3xl font-bold text-jet-black dark:text-white">
-              {totalChains}
-            </div>
-          </Card>
+        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
+          <a
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
+            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Image
+              className="dark:invert"
+              src="/vercel.svg"
+              alt="Vercel logomark"
+              width={16}
+              height={16}
+            />
+            Deploy Now
+          </a>
+          <a
+            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
+            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Documentation
+          </a>
         </div>
-
-        {/* Accounts section */}
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-jet-black dark:text-white">
-              Your Accounts
-            </h2>
-            <Button onClick={() => setIsAccountFormOpen(true)}>
-              + New Account
-            </Button>
-          </div>
-          <AccountList
-            accounts={accountState.accounts}
-            onEdit={handleEditAccount}
-            onDelete={handleDeleteAccount}
-            onDeposit={handleDeposit}
-            onWithdraw={handleWithdraw}
-          />
-        </section>
-
-        {/* Chains section */}
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-jet-black dark:text-white">
-              Deposit Chains
-            </h2>
-            <Button onClick={() => setIsChainFormOpen(true)}>
-              + New Chain
-            </Button>
-          </div>
-          <ChainList
-            chains={chainState.chains}
-            accounts={accountState.accounts}
-            onEdit={handleEditChain}
-            onDelete={handleDeleteChain}
-            onDeposit={(chain) => setDepositChainId(chain.id)}
-            onManageAccounts={(chain) => setManagingChainId(chain.id)}
-          />
-        </section>
-      </div>
-
-      {/* Account Form Modal */}
-      <AccountForm
-        isOpen={isAccountFormOpen}
-        onClose={() => {
-          setIsAccountFormOpen(false);
-          setEditingAccount(undefined);
-        }}
-        onSubmit={editingAccount ? handleUpdateAccount : handleCreateAccount}
-        account={editingAccount}
-      />
-
-      {/* Transaction Modal */}
-      <TransactionModal
-        isOpen={!!transactionAccount}
-        onClose={() => setTransactionAccount(null)}
-        account={transactionAccount}
-        type={transactionType}
-        onSubmit={handleTransaction}
-      />
-
-      {/* Chain Form Modal */}
-      <ChainForm
-        isOpen={isChainFormOpen}
-        onClose={() => {
-          setIsChainFormOpen(false);
-          setEditingChain(undefined);
-        }}
-        onSubmit={editingChain ? handleUpdateChain : handleCreateChain}
-        chain={editingChain}
-      />
-
-      {/* Chain Deposit Modal */}
-      <ChainDepositModal
-        isOpen={!!depositChainId}
-        onClose={() => setDepositChainId(null)}
-        chain={depositChain}
-        accounts={accountState.accounts}
-        onConfirmDeposit={handleChainDeposit}
-      />
-
-      {/* Manage Chain Accounts Modal */}
-      <ManageChainAccountsModal
-        isOpen={!!managingChainId}
-        onClose={() => setManagingChainId(null)}
-        chain={managingChain}
-        accounts={accountState.accounts}
-        onAddAccount={addAccountToChain}
-        onRemoveAccount={removeAccountFromChain}
-        onReorder={reorderChainAccounts}
-        onUpdateLimit={updateAccountLimitInChain}
-        onSetOverflowAccount={setOverflowAccount}
-      />
-    </MainLayout>
+      </main>
+    </div>
   );
 }
